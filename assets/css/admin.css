@@ -1,0 +1,339 @@
+/* WP Logbook – admin screens. */
+
+/* QSO form */
+.wplb-form-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 280px;
+	gap: 20px;
+	align-items: start;
+	margin-top: 16px;
+}
+
+.wplb-section {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	margin: 0 0 16px;
+	padding: 16px;
+}
+
+details.wplb-section {
+	padding: 0;
+}
+
+details.wplb-section > summary {
+	cursor: pointer;
+	font-weight: 600;
+	padding: 12px 16px;
+}
+
+details.wplb-section[open] > summary {
+	border-bottom: 1px solid #dcdcde;
+}
+
+details.wplb-section > .wplb-grid,
+details.wplb-section > .wplb-qrz-box {
+	padding: 16px;
+}
+
+.wplb-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+	gap: 12px 16px;
+}
+
+.wplb-field label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.wplb-field input[type="text"],
+.wplb-field input[type="email"],
+.wplb-field input[type="number"],
+.wplb-field input[type="date"],
+.wplb-field select,
+.wplb-field textarea {
+	width: 100%;
+	max-width: 100%;
+}
+
+.wplb-field-datetime,
+.wplb-key-comment,
+.wplb-key-qslmsg {
+	grid-column: span 2;
+}
+
+.wplb-field-text {
+	grid-column: 1 / -1;
+}
+
+.wplb-datetime {
+	display: flex;
+	gap: 6px;
+}
+
+.wplb-datetime input[type="date"] {
+	flex: 1 1 9em;
+	min-width: 0;
+}
+
+.wplb-datetime input[type="time"] {
+	flex: 1 1 9em;
+	min-width: 0;
+}
+
+.wplb-datetime .button {
+	flex: 0 0 auto;
+}
+
+.wplb-key-callsign input {
+	font-size: 1.4em;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+}
+
+.wplb-required {
+	color: #d63638;
+}
+
+.wplb-has-error input,
+.wplb-has-error select {
+	border-color: #d63638;
+}
+
+.wplb-error {
+	color: #d63638;
+	display: block;
+	font-size: 12px;
+	margin-top: 2px;
+}
+
+.wplb-filled {
+	background-color: #fcf9e8;
+}
+
+.wplb-submit .wplb-delete-link {
+	color: #b32d2e;
+	margin-left: 12px;
+}
+
+.wplb-form-side {
+	position: sticky;
+	top: 48px;
+}
+
+.wplb-lookup-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	padding: 12px 16px;
+}
+
+.wplb-lookup-panel h2 {
+	font-size: 14px;
+	margin: 0 0 8px;
+}
+
+.wplb-lookup-list {
+	margin: 0;
+}
+
+.wplb-lookup-list li {
+	margin-bottom: 4px;
+}
+
+@media screen and (max-width: 960px) {
+	.wplb-form-layout {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.wplb-form-side {
+		position: static;
+	}
+}
+
+@media screen and (max-width: 600px) {
+	.wplb-field-datetime,
+	.wplb-key-comment,
+	.wplb-key-qslmsg {
+		grid-column: auto;
+	}
+
+	.wplb-datetime {
+		flex-wrap: wrap;
+	}
+
+	.wplb-datetime input[type="date"] {
+		flex-basis: 100%;
+	}
+}
+
+/* Logbook list */
+.wplb-qrz-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #2271b1;
+	margin: 16px 0 8px;
+	padding: 4px 12px;
+}
+
+.wplb-qrz-progress {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 8px;
+}
+
+.wplb-qrz-progress progress {
+	width: 240px;
+}
+
+.wplb-qrz-errors {
+	color: #b32d2e;
+	list-style: disc;
+	margin: 0 0 8px 20px;
+}
+
+.wplb-qrz-errors:empty {
+	display: none;
+}
+
+.wplb-badge {
+	border-radius: 3px;
+	display: inline-block;
+	font-size: 12px;
+	line-height: 1.8;
+	padding: 0 6px;
+	white-space: nowrap;
+}
+
+.wplb-badge-pending {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.wplb-badge-uploaded {
+	background: #edfaef;
+	color: #00650f;
+}
+
+.wplb-badge-modified {
+	background: #fcf9e8;
+	color: #8a6116;
+}
+
+.wplb-badge-failed {
+	background: #fcf0f1;
+	color: #b32d2e;
+}
+
+.wplb-badge-skip {
+	background: #f6f7f7;
+	color: #787c82;
+}
+
+.wplb-qsl {
+	border: 1px solid #c3c4c7;
+	border-radius: 2px;
+	display: inline-block;
+	font-size: 11px;
+	line-height: 1.6;
+	margin-right: 2px;
+	text-align: center;
+	width: 1.6em;
+}
+
+.wplb-qsl-rcvd {
+	background: #00a32a;
+	border-color: #00a32a;
+	color: #fff;
+	font-weight: 600;
+}
+
+.wp-list-table .column-time_on {
+	width: 9.5em;
+}
+
+.wp-list-table .column-callsign {
+	width: 12em;
+}
+
+.wp-list-table .column-band,
+.wp-list-table .column-freq,
+.wp-list-table .column-mode,
+.wp-list-table .column-gridsquare,
+.wp-list-table .column-qsl {
+	width: 6em;
+}
+
+.wp-list-table .column-rst {
+	width: 7em;
+}
+
+.wp-list-table .column-qrz_status {
+	width: 10em;
+}
+
+/* Import / Export */
+.wplb-cards {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20px;
+}
+
+.wplb-cards .card {
+	flex: 1 1 360px;
+	margin-top: 16px;
+}
+
+.wplb-inline-fields label {
+	display: inline-block;
+	margin: 0 12px 8px 0;
+}
+
+.wplb-notice-list {
+	list-style: disc;
+	margin: 0 0 8px 20px;
+}
+
+/* Settings */
+.wplb-columns label {
+	display: inline-block;
+	margin: 0 16px 8px 0;
+	min-width: 12em;
+}
+
+.wplb-test-result {
+	margin-top: 8px;
+	max-width: 40em;
+}
+
+.wplb-test-result.is-ok {
+	border-left: 4px solid #00a32a;
+	padding-left: 8px;
+}
+
+.wplb-test-result.is-error {
+	border-left: 4px solid #d63638;
+	color: #b32d2e;
+	padding-left: 8px;
+}
+
+.wplb-test-result dl {
+	display: grid;
+	gap: 2px 12px;
+	grid-template-columns: max-content 1fr;
+	margin: 8px 0 0;
+}
+
+.wplb-test-result dt {
+	font-weight: 600;
+}
+
+.wplb-test-result dd {
+	margin: 0;
+}
+
+.wplb-test-warning {
+	color: #8a6116;
+}
