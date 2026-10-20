@@ -47,27 +47,48 @@ class WPLB_Install {
 	public static function install() {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( self::schema() );
+		WPLB_Logbooks::flush();
 
 		add_option( WPLB_Settings::OPTION, WPLB_Settings::defaults() );
 		add_option( WPLB_Settings::API_KEY_OPTION, '', '', false );
+
+		// Version 2 added logbooks: QSOs logged before then go into the default one.
+		WPLB_Logbooks::ensure_default();
+
 		update_option( self::DB_VERSION_OPTION, WPLB_DB_VERSION );
 	}
 
 	/**
-	 * Table definition in dbDelta format.
+	 * Table definitions in dbDelta format.
 	 *
-	 * Column names follow the ADIF field names (see WPLB_Fields), except
+	 * QSO column names follow the ADIF field names (see WPLB_Fields), except
 	 * "callsign" for CALL, which is a reserved word in MySQL.
 	 *
-	 * @return string
+	 * @return string[]
 	 */
 	public static function schema() {
 		global $wpdb;
-		$table   = WPLB_QSOs::table();
-		$collate = $wpdb->get_charset_collate();
+		$table    = WPLB_QSOs::table();
+		$logbooks = WPLB_Logbooks::table();
+		$collate  = $wpdb->get_charset_collate();
 
-		return "CREATE TABLE {$table} (
+		$queries   = array();
+		$queries[] = "CREATE TABLE {$logbooks} (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  title varchar(100) NOT NULL DEFAULT '',
+  slug varchar(100) NOT NULL DEFAULT '',
+  description text,
+  station_callsign varchar(32) NOT NULL DEFAULT '',
+  qrz_upload tinyint(1) NOT NULL DEFAULT 1,
+  qrz_api_key varchar(64) NOT NULL DEFAULT '',
+  created_at datetime NOT NULL,
+  PRIMARY KEY  (id),
+  UNIQUE KEY slug (slug)
+) {$collate};";
+
+		$queries[] = "CREATE TABLE {$table} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  logbook_id bigint(20) unsigned NOT NULL DEFAULT 0,
   callsign varchar(32) NOT NULL DEFAULT '',
   time_on datetime NOT NULL,
   time_off datetime DEFAULT NULL,
@@ -148,10 +169,13 @@ class WPLB_Install {
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
   PRIMARY KEY  (id),
+  KEY logbook_id (logbook_id),
   KEY time_on (time_on),
   KEY callsign (callsign),
   KEY band_mode (band,mode),
   KEY qrz_status (qrz_status)
 ) {$collate};";
+
+		return $queries;
 	}
 }

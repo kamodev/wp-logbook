@@ -112,9 +112,35 @@ details.wplb-section > .wplb-qrz-box {
 	background-color: #fcf9e8;
 }
 
-.wplb-submit .wplb-delete-link {
+.wplb-submit .wplb-delete-link,
+.wplb-danger-link {
 	color: #b32d2e;
 	margin-left: 12px;
+}
+
+.wplb-logbook-picker {
+	align-items: center;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 12px;
+	margin: 0 0 16px;
+	padding: 12px 16px;
+}
+
+.wplb-logbook-picker label {
+	font-weight: 600;
+}
+
+.wplb-logbook-picker select {
+	max-width: 100%;
+	min-width: 14em;
+}
+
+.wplb-logbook-picker .description {
+	flex-basis: 100%;
+	margin: 0;
 }
 
 .wplb-form-side {
@@ -336,4 +362,88 @@ details.wplb-section > .wplb-qrz-box {
 
 .wplb-test-warning {
 	color: #8a6116;
+}
+
+/* Logbooks screen */
+.wplb-logbooks-screen .form-wrap .form-field input[type="checkbox"] {
+	width: auto;
+}
+
+.wplb-logbooks-screen .form-wrap .wplb-field-heading {
+	margin: 0;
+	padding: 2px 0;
+}
+
+.wplb-table-scroll {
+	overflow-x: auto;
+}
+
+.wplb-logbooks-table .column-title {
+	width: 36%;
+}
+
+.wplb-logbooks-table .column-qsos {
+	text-align: right;
+	width: 4.5em;
+}
+
+.wplb-logbooks-table td .description {
+	margin: 2px 0 0;
+}
+
+.wplb-logbooks-table code,
+.wplb-logbooks-table .row-actions span {
+	white-space: nowrap;
+}
+
+.wplb-default-tag {
+	background: #dcdcde;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 1px 6px;
+	vertical-align: middle;
+}
+
+.wplb-delete-choice legend {
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+@media screen and (max-width: 782px) {
+	/* Stack the logbooks as cards. */
+	.wplb-logbooks-table thead {
+		display: none;
+	}
+
+	.wplb-logbooks-table,
+	.wplb-logbooks-table tbody,
+	.wplb-logbooks-table tr,
+	.wplb-logbooks-table td {
+		display: block;
+		width: auto !important;
+	}
+
+	.wplb-logbooks-table td {
+		padding: 4px 12px;
+		text-align: left !important;
+	}
+
+	.wplb-logbooks-table td.column-title {
+		padding-top: 12px;
+	}
+
+	.wplb-logbooks-table td:last-child {
+		padding-bottom: 12px;
+	}
+
+	.wplb-logbooks-table td:not(.column-title)::before {
+		content: attr(data-colname) ": ";
+		font-weight: 600;
+	}
+
+	.wplb-logbooks-table code {
+		white-space: normal;
+		word-break: break-all;
+	}
 }

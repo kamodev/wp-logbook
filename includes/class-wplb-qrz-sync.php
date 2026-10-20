@@ -43,12 +43,13 @@ class WPLB_QRZ_Sync {
 	}
 
 	/**
-	 * Whether QRZ.com uploads are switched on and a key is present.
+	 * Whether QRZ.com uploads are switched on and at least one logbook can
+	 * upload (it has a key of its own or the settings have one).
 	 *
 	 * @return bool
 	 */
 	public static function is_enabled() {
-		return (bool) WPLB_Settings::get( 'qrz_enabled' ) && '' !== WPLB_Settings::api_key();
+		return (bool) WPLB_Settings::get( 'qrz_enabled' ) && WPLB_Logbooks::qrz_logbook_ids();
 	}
 
 	/**
@@ -96,7 +97,7 @@ class WPLB_QRZ_Sync {
 		 * @param int $limit QSOs per run.
 		 */
 		$limit = (int) apply_filters( 'wplb_qrz_cron_batch_size', 50 );
-		self::upload_many( WPLB_QSOs::ids_with_qrz_status( array( 'pending', 'modified' ), $limit ) );
+		self::upload_many( WPLB_QSOs::ids_with_qrz_status( array( 'pending', 'modified' ), $limit, WPLB_Logbooks::qrz_logbook_ids() ) );
 
 		delete_transient( self::LOCK );
 	}
@@ -119,18 +120,24 @@ class WPLB_QRZ_Sync {
 		if ( ! $qso ) {
 			return self::outcome( 'error', __( 'QSO not found.', 'wp-logbook' ) );
 		}
+		$logbook = (int) $qso['logbook_id'];
+		if ( ! WPLB_Logbooks::uploads_to_qrz( $logbook ) ) {
+			/* translators: %s: logbook title */
+			return self::outcome( 'skipped', sprintf( __( 'The logbook "%s" is not uploaded to QRZ.com.', 'wp-logbook' ), WPLB_Logbooks::title( $logbook ) ) );
+		}
 		if ( 'skip' === $qso['qrz_status'] ) {
 			return self::outcome( 'skipped', __( 'This QSO is marked "Not for QRZ.com".', 'wp-logbook' ) );
 		}
 
 		$send = $qso;
 		if ( empty( $send['station_callsign'] ) ) {
-			$send['station_callsign'] = WPLB_Settings::get( 'station_callsign' );
+			$send['station_callsign'] = WPLB_Logbooks::station_callsign( $logbook );
 		}
+		$client    = self::client( WPLB_Logbooks::qrz_key( $logbook ) );
 		$old_logid = (int) $qso['qrz_logid'];
 		$replace   = $old_logid > 0 || in_array( $qso['qrz_status'], array( 'uploaded', 'modified' ), true );
 
-		$response = self::client()->insert( WPLB_ADIF::record( $send, 'qrz' ), $replace );
+		$response = $client->insert( WPLB_ADIF::record( $send, 'qrz' ), $replace );
 		if ( is_wp_error( $response ) ) {
 			return self::outcome( 'error', $response->get_error_message(), true );
 		}
@@ -146,7 +153,7 @@ class WPLB_QRZ_Sync {
 			// same contact (callsign, band, mode or time changed), so it created a
 			// new record. Remove the old one so the edit does not leave a stray copy.
 			if ( 'OK' === $result && $old_logid && $logid && $old_logid !== $logid ) {
-				$deleted = self::client()->delete( array( $old_logid ) );
+				$deleted = $client->delete( array( $old_logid ) );
 				if ( is_wp_error( $deleted ) || ! in_array( strtoupper( $deleted['RESULT'] ), array( 'OK', 'PARTIAL' ), true ) ) {
 					/* translators: %d: QRZ.com log ID */
 					$message = sprintf( __( 'Uploaded, but the previous copy on QRZ.com (log ID %d) could not be removed.', 'wp-logbook' ), $old_logid );
@@ -252,7 +259,7 @@ class WPLB_QRZ_Sync {
 			return null;
 		}
 		$qso = WPLB_QSOs::get( $id );
-		if ( ! $qso || ! in_array( $qso['qrz_status'], array( 'pending', 'modified' ), true ) ) {
+		if ( ! $qso || ! in_array( $qso['qrz_status'], array( 'pending', 'modified' ), true ) || ! WPLB_Logbooks::uploads_to_qrz( $qso['logbook_id'] ) ) {
 			return null;
 		}
 		return self::upload( $qso );
@@ -289,26 +296,88 @@ class WPLB_QRZ_Sync {
 			return;
 		}
 
-		$logids = array();
+		// Each logbook may upload to a different QRZ.com logbook (API key).
+		$by_key = array();
 		foreach ( WPLB_QSOs::get_many( $ids ) as $qso ) {
-			if ( ! empty( $qso['qrz_logid'] ) ) {
-				$logids[] = (int) $qso['qrz_logid'];
+			$key = WPLB_Logbooks::qrz_key( $qso['logbook_id'] );
+			if ( ! empty( $qso['qrz_logid'] ) && '' !== $key ) {
+				$by_key[ $key ][] = (int) $qso['qrz_logid'];
 			}
 		}
 
-		foreach ( array_chunk( $logids, 100 ) as $chunk ) {
-			$response = self::client()->delete( $chunk );
-			if ( is_wp_error( $response ) ) {
-				self::$delete_errors[] = $response->get_error_message();
-			} elseif ( 'OK' !== strtoupper( $response['RESULT'] ) ) {
-				$detail                = isset( $response['REASON'] ) ? $response['REASON'] : $response['RESULT'];
-				self::$delete_errors[] = sprintf(
-					/* translators: 1: comma separated log IDs, 2: reason */
-					__( 'QRZ.com did not delete log IDs %1$s: %2$s', 'wp-logbook' ),
-					isset( $response['LOGIDS'] ) && '' !== $response['LOGIDS'] ? $response['LOGIDS'] : implode( ',', $chunk ),
-					$detail
-				);
+		foreach ( $by_key as $key => $logids ) {
+			foreach ( array_chunk( $logids, 100 ) as $chunk ) {
+				self::delete_logids( $key, $chunk );
 			}
+		}
+	}
+
+	/**
+	 * Delete QSOs from one QRZ.com logbook, noting failures in $delete_errors.
+	 *
+	 * @param string $key    API key.
+	 * @param int[]  $logids QRZ.com log IDs (at most 100).
+	 */
+	private static function delete_logids( $key, array $logids ) {
+		$response = self::client( $key )->delete( $logids );
+		if ( is_wp_error( $response ) ) {
+			self::$delete_errors[] = $response->get_error_message();
+		} elseif ( 'OK' !== strtoupper( $response['RESULT'] ) ) {
+			$detail                = isset( $response['REASON'] ) ? $response['REASON'] : $response['RESULT'];
+			self::$delete_errors[] = sprintf(
+				/* translators: 1: comma separated log IDs, 2: reason */
+				__( 'QRZ.com did not delete log IDs %1$s: %2$s', 'wp-logbook' ),
+				isset( $response['LOGIDS'] ) && '' !== $response['LOGIDS'] ? $response['LOGIDS'] : implode( ',', $logids ),
+				$detail
+			);
+		}
+	}
+
+	/**
+	 * Prepare QSOs for a move to another logbook.
+	 *
+	 * When the target uploads to a different QRZ.com logbook (another API
+	 * key), the QRZ.com copy belongs to the old logbook: it is deleted there
+	 * when deletions are passed on, and the QSO is queued for the new one.
+	 *
+	 * @param array[] $qsos    QSO rows.
+	 * @param int     $logbook Target logbook ID.
+	 */
+	public static function before_move( array $qsos, $logbook ) {
+		$new_key = WPLB_Logbooks::qrz_key( $logbook );
+		$by_key  = array();
+		$reset   = array();
+
+		foreach ( $qsos as $qso ) {
+			$old_key  = WPLB_Logbooks::qrz_key( $qso['logbook_id'] );
+			$was_sent = ! empty( $qso['qrz_logid'] ) || in_array( $qso['qrz_status'], array( 'uploaded', 'modified' ), true );
+			if ( ! $was_sent || $old_key === $new_key ) {
+				continue;
+			}
+			$reset[] = (int) $qso['id'];
+			if ( ! empty( $qso['qrz_logid'] ) && '' !== $old_key ) {
+				$by_key[ $old_key ][] = (int) $qso['qrz_logid'];
+			}
+		}
+
+		if ( self::is_enabled() && WPLB_Settings::get( 'qrz_delete_remote' ) ) {
+			foreach ( $by_key as $key => $logids ) {
+				foreach ( array_chunk( $logids, 100 ) as $chunk ) {
+					self::delete_logids( $key, $chunk );
+				}
+			}
+		}
+		foreach ( $reset as $id ) {
+			WPLB_QSOs::update(
+				$id,
+				array(
+					'qrz_status'      => 'pending',
+					'qrz_logid'       => null,
+					'qrz_upload_date' => null,
+					'qrz_message'     => '',
+				),
+				false
+			);
 		}
 	}
 

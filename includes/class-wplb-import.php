@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Adds the QSOs of an ADIF file to the logbook.
+ * Adds the QSOs of an ADIF file to a logbook.
  */
 class WPLB_Import {
 
@@ -24,21 +24,29 @@ class WPLB_Import {
 	 * @param array  $options {
 	 *     Optional.
 	 *
-	 *     @type bool   $skip_duplicates  Skip QSOs already in the log (same callsign, band and mode within a minute).
+	 *     @type int    $logbook          Logbook that receives the QSOs (default logbook when 0).
+	 *     @type bool   $file_logbooks    Put QSOs exported by WP Logbook back into the logbook named
+	 *                                    in the file (APP_WPLOGBOOK_LOGBOOK), creating it if needed.
+	 *     @type bool   $skip_duplicates  Skip QSOs already in the target logbook (same callsign, band
+	 *                                    and mode within a minute).
 	 *     @type bool   $mark_uploaded    Treat imported QSOs as already in the QRZ.com logbook.
-	 *     @type string $station_callsign Station callsign for records that have none.
+	 *     @type string $station_callsign Station callsign for records that have none; when empty the
+	 *                                    logbook's (or the settings') station callsign is used.
 	 * }
-	 * @return array Summary: records, imported, duplicates, failed, errors.
+	 * @return array Summary: records, imported, duplicates, failed, errors, logbooks (ID => QSOs imported).
 	 */
 	public static function adif( $text, array $options = array() ) {
 		$options = wp_parse_args(
 			$options,
 			array(
+				'logbook'          => 0,
+				'file_logbooks'    => false,
 				'skip_duplicates'  => true,
 				'mark_uploaded'    => false,
 				'station_callsign' => '',
 			)
 		);
+		$default = WPLB_Logbooks::get( $options['logbook'] ) ? (int) $options['logbook'] : WPLB_Logbooks::default_id();
 
 		$parsed  = WPLB_ADIF::parse( $text );
 		$summary = array(
@@ -47,13 +55,26 @@ class WPLB_Import {
 			'duplicates' => 0,
 			'failed'     => 0,
 			'errors'     => array(),
+			'logbooks'   => array(),
 		);
+		$found   = array();
 
 		foreach ( $parsed['records'] as $index => $record ) {
 			$raw                   = WPLB_ADIF::record_to_qso( $record );
 			list( $data, $errors ) = WPLB_Fields::sanitize( $raw );
-			if ( empty( $data['station_callsign'] ) && '' !== $options['station_callsign'] ) {
-				$data['station_callsign'] = $options['station_callsign'];
+
+			$logbook = $default;
+			if ( $options['file_logbooks'] && isset( $raw['_logbook'] ) ) {
+				$key = $raw['_logbook']['slug'] . '|' . $raw['_logbook']['title'];
+				if ( ! isset( $found[ $key ] ) ) {
+					$found[ $key ] = self::file_logbook( $raw['_logbook'], $default );
+				}
+				$logbook = $found[ $key ];
+			}
+			$data['logbook_id'] = $logbook;
+
+			if ( empty( $data['station_callsign'] ) ) {
+				$data['station_callsign'] = '' !== $options['station_callsign'] ? $options['station_callsign'] : WPLB_Logbooks::station_callsign( $logbook );
 			}
 			$errors += WPLB_Fields::validate( $data );
 
@@ -76,7 +97,7 @@ class WPLB_Import {
 				continue;
 			}
 
-			if ( $options['skip_duplicates'] && WPLB_QSOs::find_duplicate( $data['callsign'], $data['time_on'], $data['band'], $data['mode'] ) ) {
+			if ( $options['skip_duplicates'] && WPLB_QSOs::find_duplicate( $data['callsign'], $data['time_on'], $data['band'], $data['mode'], 0, $logbook ) ) {
 				++$summary['duplicates'];
 				continue;
 			}
@@ -97,9 +118,34 @@ class WPLB_Import {
 				continue;
 			}
 			++$summary['imported'];
+			$summary['logbooks'][ $logbook ] = ( isset( $summary['logbooks'][ $logbook ] ) ? $summary['logbooks'][ $logbook ] : 0 ) + 1;
 		}
 
 		return $summary;
+	}
+
+	/**
+	 * The logbook named in an exported file, created when missing.
+	 *
+	 * @param array $named    Title and slug from the file.
+	 * @param int   $fallback Logbook used when it cannot be created.
+	 * @return int Logbook ID.
+	 */
+	private static function file_logbook( array $named, $fallback ) {
+		$id = '' !== $named['slug'] ? WPLB_Logbooks::resolve( $named['slug'] ) : 0;
+		if ( ! $id && '' !== $named['title'] ) {
+			$id = WPLB_Logbooks::resolve( $named['title'] );
+		}
+		if ( ! $id && '' !== $named['title'] ) {
+			$id = WPLB_Logbooks::create(
+				array(
+					'title' => $named['title'],
+					'slug'  => $named['slug'],
+				)
+			);
+			$id = is_wp_error( $id ) ? 0 : $id;
+		}
+		return $id ? $id : $fallback;
 	}
 
 	/**

@@ -535,7 +535,7 @@ class WPLB_Fields {
 	/**
 	 * Fields that may be shown on the public site.
 	 *
-	 * @return array Column => label, plus the virtual "confirmed" column.
+	 * @return array Column => label, plus the virtual "confirmed" and "logbook" columns.
 	 */
 	public static function public_columns() {
 		// Logbooks conventionally start with the date, so offer it first.
@@ -546,6 +546,7 @@ class WPLB_Fields {
 			}
 		}
 		$columns['confirmed'] = __( 'Confirmed', 'wp-logbook' );
+		$columns['logbook']   = __( 'Logbook', 'wp-logbook' );
 		return $columns;
 	}
 

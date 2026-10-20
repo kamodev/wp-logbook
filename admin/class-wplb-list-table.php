@@ -56,10 +56,32 @@ class WPLB_List_Table extends WP_List_Table {
 			'gridsquare' => __( 'Grid', 'wp-logbook' ),
 			'qsl'        => __( 'QSL', 'wp-logbook' ),
 		);
+		if ( $this->several_logbooks() && ! $this->current_logbook() ) {
+			$columns = array_slice( $columns, 0, 3, true ) + array( 'logbook' => __( 'Logbook', 'wp-logbook' ) ) + array_slice( $columns, 3, null, true );
+		}
 		if ( $this->qrz ) {
 			$columns['qrz_status'] = __( 'QRZ.com', 'wp-logbook' );
 		}
 		return $columns;
+	}
+
+	/**
+	 * Whether there is more than one logbook.
+	 *
+	 * @return bool
+	 */
+	private function several_logbooks() {
+		return count( WPLB_Logbooks::all() ) > 1;
+	}
+
+	/**
+	 * Logbook the list is limited to, or 0 for all.
+	 *
+	 * @return int
+	 */
+	private function current_logbook() {
+		$id = absint( $this->request_value( 'logbook' ) );
+		return WPLB_Logbooks::get( $id ) ? $id : 0;
 	}
 
 	/**
@@ -104,6 +126,14 @@ class WPLB_List_Table extends WP_List_Table {
 			$actions['qrz_queue']  = __( 'Queue for QRZ.com upload', 'wp-logbook' );
 			$actions['qrz_skip']   = __( 'Do not upload to QRZ.com', 'wp-logbook' );
 		}
+		if ( $this->several_logbooks() ) {
+			// Shown as an option group: one "move" action per logbook.
+			$move = array();
+			foreach ( WPLB_Logbooks::choices() as $id => $title ) {
+				$move[ 'move-' . $id ] = $title;
+			}
+			$actions[ __( 'Move to logbook', 'wp-logbook' ) ] = $move;
+		}
 		return $actions;
 	}
 
@@ -117,9 +147,10 @@ class WPLB_List_Table extends WP_List_Table {
 			return array();
 		}
 
-		$counts  = WPLB_QSOs::count_by_qrz_status();
+		$logbook = $this->current_logbook();
+		$counts  = WPLB_QSOs::count_by_qrz_status( $logbook ? array( $logbook ) : null );
 		$current = $this->current_status();
-		$base    = admin_url( 'admin.php?page=wplb-logbook' );
+		$base    = admin_url( 'admin.php?page=wplb-logbook' . ( $logbook ? '&logbook=' . $logbook : '' ) );
 		$views   = array(
 			'all' => sprintf(
 				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
@@ -155,13 +186,23 @@ class WPLB_List_Table extends WP_List_Table {
 		}
 
 		$options = WPLB_QSOs::filter_options();
-		if ( ! $options['bands'] && ! $options['modes'] ) {
+		if ( ! $options['bands'] && ! $options['modes'] && ! $this->several_logbooks() ) {
 			return;
 		}
 		$band = $this->request_value( 'band' );
 		$mode = $this->request_value( 'mode' );
 
 		echo '<div class="alignleft actions">';
+		if ( $this->several_logbooks() ) {
+			$counts = WPLB_Logbooks::counts();
+			printf( '<label class="screen-reader-text" for="wplb-filter-logbook">%s</label>', esc_html__( 'Filter by logbook', 'wp-logbook' ) );
+			printf( '<select name="logbook" id="wplb-filter-logbook"><option value="">%s</option>', esc_html__( 'All logbooks', 'wp-logbook' ) );
+			foreach ( WPLB_Logbooks::choices() as $id => $title ) {
+				/* translators: 1: logbook title, 2: number of QSOs */
+				printf( '<option value="%d"%s>%s</option>', (int) $id, selected( $this->current_logbook(), $id, false ), esc_html( sprintf( __( '%1$s (%2$s)', 'wp-logbook' ), $title, number_format_i18n( $counts[ $id ] ) ) ) );
+			}
+			echo '</select>';
+		}
 		printf( '<label class="screen-reader-text" for="wplb-filter-band">%s</label>', esc_html__( 'Filter by band', 'wp-logbook' ) );
 		printf( '<select name="band" id="wplb-filter-band"><option value="">%s</option>', esc_html__( 'All bands', 'wp-logbook' ) );
 		foreach ( $options['bands'] as $value ) {
@@ -186,6 +227,7 @@ class WPLB_List_Table extends WP_List_Table {
 		$result   = WPLB_QSOs::query(
 			array(
 				'search'     => $this->request_value( 's' ),
+				'logbook'    => $this->current_logbook(),
 				'band'       => $this->request_value( 'band' ),
 				'mode'       => $this->request_value( 'mode' ),
 				'qrz_status' => $this->current_status(),
@@ -287,6 +329,13 @@ class WPLB_List_Table extends WP_List_Table {
 
 			case 'qrz_status':
 				return WPLB_Admin::qrz_badge( $item );
+
+			case 'logbook':
+				return sprintf(
+					'<a href="%s">%s</a>',
+					esc_url( admin_url( 'admin.php?page=wplb-logbook&logbook=' . (int) $item['logbook_id'] ) ),
+					esc_html( WPLB_Logbooks::title( $item['logbook_id'] ) )
+				);
 
 			default:
 				return isset( $item[ $column_name ] ) ? esc_html( $item[ $column_name ] ) : '';

@@ -34,17 +34,35 @@ class WPLB_QSO_Form {
 	private static $errors = array();
 
 	/**
+	 * Logbook the QSO is (or will be) in.
+	 *
+	 * @var int
+	 */
+	private static $logbook = 0;
+
+	/**
+	 * User meta that remembers the logbook last logged to.
+	 */
+	const LAST_LOGBOOK_META = 'wplb_last_logbook';
+
+	/**
 	 * Load handler: find the QSO and process a submitted form.
 	 */
 	public static function load() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- selects the QSO to show.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- selects what to show.
 		$id = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
 		if ( $id ) {
 			self::$qso = WPLB_QSOs::get( $id );
 			if ( ! self::$qso ) {
 				wp_die( esc_html__( 'That QSO does not exist. It may have been deleted.', 'wp-logbook' ), '', array( 'back_link' => true ) );
 			}
+			self::$logbook = (int) self::$qso['logbook_id'];
+		} else {
+			// New QSO: the logbook in the link, else the one used last, else the default.
+			$wanted        = isset( $_GET['logbook'] ) ? absint( $_GET['logbook'] ) : (int) get_user_meta( get_current_user_id(), self::LAST_LOGBOOK_META, true );
+			self::$logbook = WPLB_Logbooks::get( $wanted ) ? $wanted : WPLB_Logbooks::default_id();
 		}
+		// phpcs:enable
 
 		if ( isset( $_POST['wplb_qso_nonce'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in save().
 			self::save();
@@ -64,6 +82,11 @@ class WPLB_QSO_Form {
 		$raw   = isset( $_POST['wplb'] ) && is_array( $_POST['wplb'] ) ? wp_unslash( $_POST['wplb'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$input = self::input_from_form( $raw );
 
+		$logbook = isset( $_POST['wplb_logbook'] ) ? absint( $_POST['wplb_logbook'] ) : 0;
+		if ( WPLB_Logbooks::get( $logbook ) ) {
+			self::$logbook = $logbook;
+		}
+
 		list( $data, $errors ) = WPLB_Fields::sanitize( $input );
 		$errors               += WPLB_Fields::validate( $data );
 		if ( $errors ) {
@@ -72,10 +95,16 @@ class WPLB_QSO_Form {
 			return;
 		}
 
-		$skip_qrz  = ! empty( $raw['qrz_skip'] );
-		$duplicate = 0;
+		$data['logbook_id'] = self::$logbook;
+		$skip_qrz           = ! empty( $raw['qrz_skip'] );
+		$duplicate          = 0;
 		if ( self::$qso ) {
-			$id     = (int) self::$qso['id'];
+			$id = (int) self::$qso['id'];
+			if ( self::$logbook !== (int) self::$qso['logbook_id'] ) {
+				// Moving to another logbook may mean another QRZ.com logbook.
+				WPLB_QRZ_Sync::before_move( array( self::$qso ), self::$logbook );
+				self::$qso = WPLB_QSOs::get( $id );
+			}
 			$status = WPLB_QRZ_Sync::status_after_edit( self::$qso, array_merge( self::$qso, $data ) );
 			if ( $skip_qrz ) {
 				$status = 'skip';
@@ -85,7 +114,7 @@ class WPLB_QSO_Form {
 			$data['qrz_status'] = $status;
 			$result             = WPLB_QSOs::update( $id, $data );
 		} else {
-			$duplicate          = WPLB_QSOs::find_duplicate( $data['callsign'], $data['time_on'], $data['band'], $data['mode'] );
+			$duplicate          = WPLB_QSOs::find_duplicate( $data['callsign'], $data['time_on'], $data['band'], $data['mode'], 0, self::$logbook );
 			$data['qrz_status'] = $skip_qrz ? 'skip' : 'pending';
 			$result             = WPLB_QSOs::insert( $data );
 			$id                 = is_wp_error( $result ) ? 0 : $result;
@@ -114,8 +143,9 @@ class WPLB_QSO_Form {
 			$type     = 'warning';
 		}
 		WPLB_Admin::add_notice( esc_html( $message ), $type );
+		update_user_meta( get_current_user_id(), self::LAST_LOGBOOK_META, self::$logbook );
 
-		$url = ! empty( $_POST['save_and_new'] ) ? admin_url( 'admin.php?page=wplb-qso' ) : admin_url( 'admin.php?page=wplb-logbook' );
+		$url = ! empty( $_POST['save_and_new'] ) ? admin_url( 'admin.php?page=wplb-qso&logbook=' . self::$logbook ) : admin_url( 'admin.php?page=wplb-logbook' );
 		wp_safe_redirect( $url );
 		exit;
 	}
@@ -149,8 +179,9 @@ class WPLB_QSO_Form {
 	 * @return array
 	 */
 	private static function defaults() {
-		$values = WPLB_Settings::station_defaults();
-		$last   = WPLB_QSOs::last_logged();
+		$values                     = WPLB_Settings::station_defaults();
+		$values['station_callsign'] = WPLB_Logbooks::station_callsign( self::$logbook );
+		$last                       = WPLB_QSOs::last_logged();
 		if ( $last ) {
 			foreach ( array( 'band', 'freq', 'mode', 'submode' ) as $key ) {
 				$values[ $key ] = $last[ $key ];
@@ -177,7 +208,7 @@ class WPLB_QSO_Form {
 		echo '<div class="wrap wplb-wrap">';
 		echo '<h1 class="wp-heading-inline">' . ( $editing ? esc_html__( 'Edit QSO', 'wp-logbook' ) : esc_html__( 'Log a QSO', 'wp-logbook' ) ) . '</h1>';
 		if ( $editing ) {
-			printf( ' <a href="%s" class="page-title-action">%s</a>', esc_url( admin_url( 'admin.php?page=wplb-qso' ) ), esc_html__( 'Log another QSO', 'wp-logbook' ) );
+			printf( ' <a href="%s" class="page-title-action">%s</a>', esc_url( admin_url( 'admin.php?page=wplb-qso&logbook=' . self::$logbook ) ), esc_html__( 'Log another QSO', 'wp-logbook' ) );
 		}
 		echo '<hr class="wp-header-end">';
 
@@ -197,6 +228,7 @@ class WPLB_QSO_Form {
 		);
 		wp_nonce_field( 'wplb_save_qso', 'wplb_qso_nonce' );
 		echo '<div class="wplb-form-layout"><div class="wplb-form-main">';
+		self::render_logbook_picker();
 
 		$fields = WPLB_Fields::all();
 		foreach ( WPLB_Fields::groups() as $group => $label ) {
@@ -247,6 +279,33 @@ class WPLB_QSO_Form {
 		echo '</div><aside class="wplb-form-side">';
 		printf( '<div class="wplb-lookup-panel" id="wplb-lookup" hidden><h2>%s</h2><div class="wplb-lookup-body" role="status"></div></div>', esc_html__( 'Previous contacts', 'wp-logbook' ) );
 		echo '</aside></div></form></div>';
+	}
+
+	/**
+	 * Logbook picker at the top of the form.
+	 *
+	 * Each option carries the logbook's station callsign so the script can
+	 * swap the default callsign of a new QSO when another logbook is picked.
+	 */
+	private static function render_logbook_picker() {
+		echo '<div class="wplb-logbook-picker">';
+		printf( '<label for="wplb-logbook">%s</label> ', esc_html__( 'Logbook', 'wp-logbook' ) );
+		echo '<select id="wplb-logbook" name="wplb_logbook">';
+		foreach ( WPLB_Logbooks::choices() as $id => $title ) {
+			printf(
+				'<option value="%d" data-station="%s"%s>%s</option>',
+				(int) $id,
+				esc_attr( WPLB_Logbooks::station_callsign( $id ) ),
+				selected( $id, self::$logbook, false ),
+				esc_html( $title )
+			);
+		}
+		echo '</select>';
+		printf( ' <a href="%s">%s</a>', esc_url( admin_url( 'admin.php?page=wplb-logbooks' ) ), esc_html__( 'Manage logbooks', 'wp-logbook' ) );
+		if ( self::$qso && WPLB_Settings::get( 'qrz_enabled' ) && ! empty( self::$qso['qrz_logid'] ) ) {
+			echo '<p class="description">' . esc_html__( 'Moving a QSO to a logbook with a different QRZ.com API key uploads it again to that QRZ.com logbook.', 'wp-logbook' ) . '</p>';
+		}
+		echo '</div>';
 	}
 
 	/**

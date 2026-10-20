@@ -132,6 +132,12 @@ class WPLB_ADIF {
 			if ( ! empty( $qso['qrz_upload_date'] ) ) {
 				$out['QRZCOM_QSO_UPLOAD_DATE'] = gmdate( 'Ymd', strtotime( $qso['qrz_upload_date'] . ' UTC' ) );
 			}
+			// Name the logbook so a backup can be restored into the same logbooks.
+			$logbook = ! empty( $qso['logbook_id'] ) && class_exists( 'WPLB_Logbooks' ) ? WPLB_Logbooks::get( $qso['logbook_id'] ) : null;
+			if ( $logbook ) {
+				$out['APP_WPLOGBOOK_LOGBOOK']      = self::ascii( $logbook['title'] );
+				$out['APP_WPLOGBOOK_LOGBOOK_SLUG'] = $logbook['slug'];
+			}
 		}
 
 		/**
@@ -298,7 +304,8 @@ class WPLB_ADIF {
 	 * "/" in callsigns, and frequencies in kHz.
 	 *
 	 * @param array $record Parsed record (upper-case field names).
-	 * @return array Column => raw value, plus qrz_status/qrz_logid/qrz_upload_date when known.
+	 * @return array Column => raw value, plus qrz_status/qrz_logid/qrz_upload_date when known
+	 *               and _logbook (title, slug) for files exported by this plugin.
 	 */
 	public static function record_to_qso( array $record ) {
 		$qso = array();
@@ -369,6 +376,12 @@ class WPLB_ADIF {
 		}
 		if ( ! empty( $record['QRZCOM_QSO_UPLOAD_DATE'] ) && WPLB_Fields::normalize_date( $record['QRZCOM_QSO_UPLOAD_DATE'] ) ) {
 			$qso['qrz_upload_date'] = WPLB_Fields::normalize_date( $record['QRZCOM_QSO_UPLOAD_DATE'] ) . ' 00:00:00';
+		}
+		if ( ! empty( $record['APP_WPLOGBOOK_LOGBOOK'] ) ) {
+			$qso['_logbook'] = array(
+				'title' => trim( $record['APP_WPLOGBOOK_LOGBOOK'] ),
+				'slug'  => isset( $record['APP_WPLOGBOOK_LOGBOOK_SLUG'] ) ? trim( $record['APP_WPLOGBOOK_LOGBOOK_SLUG'] ) : '',
+			);
 		}
 
 		return $qso;

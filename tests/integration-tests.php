@@ -36,6 +36,8 @@ $GLOBALS['wplb_tests']    = 0;
 $GLOBALS['wplb_saved']    = array(
 	'settings' => get_option( WPLB_Settings::OPTION ),
 	'key'      => get_option( WPLB_Settings::API_KEY_OPTION ),
+	'logbooks' => array_keys( WPLB_Logbooks::all() ),
+	'default'  => get_option( WPLB_Logbooks::DEFAULT_OPTION ),
 );
 
 function wplb_check( $condition, $label ) {
@@ -295,8 +297,123 @@ try {
 	wplb_check( 1 === $rows( $render( '[wp_logbook id="club" filters="state"]', array( 'wplb_club_state' => 'CT', 'wplb_state' => 'MA' ) ) ), 'id keeps logbooks independent' );
 	$html = $render( '[wp_logbook]', array( 'wplb_county' => '"><script>alert(1)</script>' ) );
 	wplb_check( false === strpos( $html, '<script>alert' ), 'visitor input escaped' );
+	/* Logbooks */
+	wplb_reset();
+	wplb_settings( array( 'station_callsign' => 'N0CALL', 'qrz_enabled' => 1, 'qrz_auto_upload' => 0, 'qrz_sync_edits' => 1, 'qrz_delete_remote' => 0, 'qrz_background_sync' => 0 ) );
+	update_option( WPLB_Settings::API_KEY_OPTION, 'ABCD-1234-EF56-7890' );
+	$main = WPLB_Logbooks::default_id();
+	wplb_check( $main > 0 && null !== WPLB_Logbooks::get( $main ), 'default logbook exists' );
+	$q = WPLB_QSOs::insert( array( 'callsign' => 'W1AW', 'time_on' => '2026-10-01 12:00:00', 'band' => '20m', 'mode' => 'SSB' ) );
+	wplb_check( $main === (int) WPLB_QSOs::get( $q )['logbook_id'], 'QSOs without a logbook go to the default one' );
+
+	$pota = WPLB_Logbooks::create( array( 'title' => 'POTA activations', 'station_callsign' => 'k1abc/p', 'description' => 'Parks' ) );
+	wplb_check( is_int( $pota ) && 'pota-activations' === WPLB_Logbooks::get( $pota )['slug'] && 'K1ABC/P' === WPLB_Logbooks::get( $pota )['station_callsign'] && '1' === (string) WPLB_Logbooks::get( $pota )['qrz_upload'], 'logbook created' );
+	wplb_check( is_wp_error( WPLB_Logbooks::create( array( 'title' => 'pota ACTIVATIONS' ) ) ), 'titles are unique' );
+	wplb_check( is_wp_error( WPLB_Logbooks::create( array( 'title' => '' ) ) ) && is_wp_error( WPLB_Logbooks::create( array( 'title' => 'X', 'station_callsign' => 'not a call!' ) ) ), 'title required, callsign checked' );
+	$contest = WPLB_Logbooks::create( array( 'title' => 'POTA-Activations 2', 'slug' => 'pota-activations' ) );
+	wplb_check( 'pota-activations-2' === WPLB_Logbooks::get( $contest )['slug'], 'slugs are unique' );
+	wplb_check( true === WPLB_Logbooks::update( $contest, array( 'title' => 'Contests', 'slug' => '2026' ) ), 'update' );
+	$row = WPLB_Logbooks::get( $contest );
+	wplb_check( 'Contests' === $row['title'] && '2026-2' === $row['slug'] && '1' === (string) $row['qrz_upload'], 'update keeps other fields; no all-digit slugs' );
+	wplb_check( $pota === WPLB_Logbooks::resolve( 'pota-activations' ) && $pota === WPLB_Logbooks::resolve( 'POTA Activations' ) && $pota === WPLB_Logbooks::resolve( (string) $pota ) && 0 === WPLB_Logbooks::resolve( 'nope' ), 'resolve by slug, title or ID' );
+	wplb_check( array( $pota, $contest ) === WPLB_Logbooks::resolve_list( 'pota-activations, nope, Contests' ) && array( 0 ) === WPLB_Logbooks::resolve_list( 'nope' ), 'resolve a list' );
+	wplb_check( 'K1ABC/P' === WPLB_Logbooks::station_callsign( $pota ) && 'N0CALL' === WPLB_Logbooks::station_callsign( $contest ), 'station callsign of the logbook, else of the settings' );
+
+	$p1 = WPLB_QSOs::insert( array( 'callsign' => 'W1AW', 'time_on' => '2026-10-01 12:00:30', 'band' => '20m', 'mode' => 'SSB', 'logbook_id' => $pota ) );
+	wplb_check( $pota === (int) WPLB_QSOs::get( $p1 )['logbook_id'], 'QSO stored in its logbook' );
+	wplb_check( $q === WPLB_QSOs::find_duplicate( 'W1AW', '2026-10-01 12:00:00', '20m', 'SSB', 0, $main ) && $p1 === WPLB_QSOs::find_duplicate( 'W1AW', '2026-10-01 12:00:00', '20m', 'SSB', 0, $pota ) && 0 === WPLB_QSOs::find_duplicate( 'W1AW', '2026-10-01 12:00:00', '20m', 'SSB', 0, $contest ), 'duplicates are per logbook' );
+	wplb_check( 1 === WPLB_QSOs::query( array( 'logbook' => $pota ) )['total'] && 2 === WPLB_QSOs::query( array( 'logbook' => array( $pota, $main ) ) )['total'] && 0 === WPLB_QSOs::query( array( 'logbook' => array( 0 ) ) )['total'], 'logbook filter' );
+	$counts = WPLB_Logbooks::counts();
+	wplb_check( 1 === $counts[ $main ] && 1 === $counts[ $pota ] && 0 === $counts[ $contest ], 'QSOs per logbook' );
+	wplb_check( 2 === WPLB_Logbooks::move_qsos( array( $q, $p1 ), $contest ) && 2 === WPLB_QSOs::query( array( 'logbook' => $contest ) )['total'], 'move QSOs' );
+	wplb_check( 0 === WPLB_Logbooks::move_qsos( array( $q ), $contest ) && 0 === WPLB_Logbooks::move_qsos( array( $q ), 999999 ), 'moving to the same or a missing logbook does nothing' );
+	WPLB_Logbooks::move_qsos( array( $p1 ), $pota );
+
+	/* Logbooks in ADIF files */
+	$record = WPLB_ADIF::record( WPLB_QSOs::get( $p1 ) );
+	wplb_check( false !== strpos( $record, '<APP_WPLOGBOOK_LOGBOOK:16>POTA activations' ) && false !== strpos( $record, '<APP_WPLOGBOOK_LOGBOOK_SLUG:16>pota-activations' ), 'export names the logbook' );
+	wplb_check( false === strpos( WPLB_ADIF::record( WPLB_QSOs::get( $p1 ), 'qrz' ), 'APP_WPLOGBOOK' ), 'the logbook is not sent to QRZ.com' );
+	$file = WPLB_ADIF::header() . $record . "\n"
+		. "<CALL:5>VE3XX <QSO_DATE:8>20261002 <TIME_ON:4>1300 <BAND:3>40m <MODE:2>CW <APP_WPLOGBOOK_LOGBOOK:8>SOTA log <APP_WPLOGBOOK_LOGBOOK_SLUG:4>sota <EOR>\n"
+		. "<CALL:5>JA1XX <QSO_DATE:8>20261003 <TIME_ON:4>1300 <BAND:3>15m <MODE:2>CW <EOR>\n";
+	wplb_reset();
+	$summary = WPLB_Import::adif( $file, array( 'logbook' => $contest, 'file_logbooks' => true ) );
+	$sota    = WPLB_Logbooks::resolve( 'sota' );
+	wplb_check( 3 === $summary['imported'] && $sota && 'SOTA log' === WPLB_Logbooks::title( $sota ), 'missing logbook created from the file' );
+	wplb_check( array( $pota => 1, $sota => 1, $contest => 1 ) == $summary['logbooks'], 'records go back to their logbooks, the rest to the chosen one' );
+	wplb_check( 'K1ABC/P' === WPLB_QSOs::query( array( 'callsign' => 'W1AW' ) )['items'][0]['station_callsign'] && 'N0CALL' === WPLB_QSOs::query( array( 'callsign' => 'JA1XX' ) )['items'][0]['station_callsign'], 'missing station callsign taken from the logbook' );
+	wplb_check( 3 === WPLB_Import::adif( $file, array( 'logbook' => $contest, 'file_logbooks' => true ) )['duplicates'], 'second import skips duplicates' );
+	$summary = WPLB_Import::adif( $file, array( 'logbook' => $main ) );
+	wplb_check( 3 === $summary['imported'] && array( $main => 3 ) === $summary['logbooks'], 'without file logbooks all go to the chosen logbook' );
+
+	/* Logbooks on public pages */
+	wplb_reset();
+	WPLB_QSOs::insert( array( 'callsign' => 'W1AW', 'time_on' => '2026-10-01 12:00:00', 'band' => '20m', 'mode' => 'SSB', 'logbook_id' => $pota ) );
+	WPLB_QSOs::insert( array( 'callsign' => 'W1AW', 'time_on' => '2026-10-02 12:00:00', 'band' => '40m', 'mode' => 'CW', 'logbook_id' => $pota ) );
+	WPLB_QSOs::insert( array( 'callsign' => 'DL1ABC', 'time_on' => '2026-10-03 12:00:00', 'band' => '20m', 'mode' => 'FT8', 'logbook_id' => $main ) );
+	$html = $render( '[wp_logbook]' );
+	wplb_check( 3 === $rows( $html ) && false !== strpos( $html, 'name="wplb_logbook"' ) && false !== strpos( $html, 'value="pota-activations"' ), 'logbook filter when QSOs are in several logbooks' );
+	wplb_check( 2 === $rows( $render( '[wp_logbook]', array( 'wplb_logbook' => 'pota-activations' ) ) ), 'visitor picks a logbook' );
+	$html = $render( '[wp_logbook logbook="pota-activations"]' );
+	wplb_check( 2 === $rows( $html ) && false === strpos( $html, 'name="wplb_logbook"' ), 'logbook attribute' );
+	wplb_check( 3 === $rows( $render( '[wp_logbook logbook="pota-activations,' . WPLB_Logbooks::get( $main )['slug'] . '"]' ) ) && 0 === $rows( $render( '[wp_logbook logbook="nope"]' ) ), 'several logbooks; an unknown logbook shows nothing' );
+	wplb_check( false !== strpos( $render( '[wp_logbook columns="callsign,logbook"]' ), '>POTA activations<' ), 'logbook column' );
+	wplb_check( false !== strpos( $render( '[wp_logbook_stats logbook="pota-activations" show="totals"]' ), '<dt>QSOs</dt><dd>2</dd>' ), 'statistics of one logbook' );
+
+	/* QRZ.com per logbook */
+	wplb_reset();
+	WPLB_Logbooks::update( $pota, array( 'qrz_api_key' => 'POTA-KEY0-0000-1111' ) );
+	WPLB_Logbooks::update( $contest, array( 'qrz_upload' => 0 ) );
+	$portable = WPLB_Logbooks::create( array( 'title' => 'Portable' ) );
+	wplb_check( 'POTA-KEY0-0000-1111' === WPLB_Logbooks::qrz_key( $pota ) && 'ABCD-1234-EF56-7890' === WPLB_Logbooks::qrz_key( $main ) && 'K1ABC/P' === WPLB_Logbooks::get( $pota )['station_callsign'], 'own key or the default key' );
+	wplb_check( ! in_array( $contest, WPLB_Logbooks::qrz_logbook_ids(), true ) && in_array( $pota, WPLB_Logbooks::qrz_logbook_ids(), true ), 'upload switch per logbook' );
+	$a = WPLB_QSOs::insert( array( 'callsign' => 'VK2X', 'time_on' => '2026-10-17 10:00:00', 'band' => '20m', 'mode' => 'FT8', 'logbook_id' => $pota ) );
+	$b = WPLB_QSOs::insert( array( 'callsign' => 'ZL1X', 'time_on' => '2026-10-17 11:00:00', 'band' => '20m', 'mode' => 'FT8', 'logbook_id' => $main ) );
+	$c = WPLB_QSOs::insert( array( 'callsign' => 'JA1X', 'time_on' => '2026-10-17 12:00:00', 'band' => '20m', 'mode' => 'FT8', 'logbook_id' => $contest ) );
+	wplb_check( ! in_array( $c, WPLB_QSOs::ids_with_qrz_status( array( 'pending' ), 0, WPLB_Logbooks::qrz_logbook_ids() ), true ) && 1 === WPLB_QSOs::count_by_qrz_status( array( $pota ) )['pending'], 'waiting QSOs of uploading logbooks only' );
+	wplb_respond( 'RESULT=OK&LOGID=5001&COUNT=1', 'RESULT=OK&LOGID=5002&COUNT=1' );
+	$summary = WPLB_QRZ_Sync::upload_many( array( $a, $b, $c ) );
+	wplb_check( 2 === wplb_request_count() && 'POTA-KEY0-0000-1111' === wplb_request( 0 )['KEY'] && 'ABCD-1234-EF56-7890' === wplb_request( 1 )['KEY'], 'each logbook uploads with its own key' );
+	wplb_check( false !== strpos( wplb_request( 0 )['ADIF'], '<STATION_CALLSIGN:7>K1ABC/P' ) && false !== strpos( wplb_request( 1 )['ADIF'], '<STATION_CALLSIGN:6>N0CALL' ), 'station callsign of the logbook sent' );
+	wplb_check( 2 === $summary['uploaded'] && 1 === $summary['skipped'] && 'pending' === WPLB_QSOs::get( $c )['qrz_status'], 'logbook without upload skipped' );
+
+	wplb_settings( array( 'qrz_delete_remote' => 1 ) );
+	wplb_respond( 'RESULT=OK&COUNT=1' );
+	WPLB_Logbooks::move_qsos( array( $a ), $main );
+	$row = WPLB_QSOs::get( $a );
+	wplb_check( 1 === wplb_request_count() && 'DELETE' === wplb_request()['ACTION'] && 'POTA-KEY0-0000-1111' === wplb_request()['KEY'] && '5001' === wplb_request()['LOGIDS'], 'moving to another QRZ.com logbook deletes the old copy' );
+	wplb_check( 'pending' === $row['qrz_status'] && null === $row['qrz_logid'] && $main === (int) $row['logbook_id'], 'and queues the QSO for the new one' );
+	wplb_respond();
+	WPLB_Logbooks::move_qsos( array( $b ), $portable );
+	wplb_check( 0 === wplb_request_count() && 'uploaded' === WPLB_QSOs::get( $b )['qrz_status'] && 5002 === (int) WPLB_QSOs::get( $b )['qrz_logid'], 'same QRZ.com logbook: nothing changes' );
+	$e = WPLB_QSOs::insert( array( 'callsign' => 'PY2X', 'time_on' => '2026-10-17 13:00:00', 'band' => '20m', 'mode' => 'FT8', 'logbook_id' => $pota, 'qrz_status' => 'uploaded', 'qrz_logid' => 6001 ) );
+	wplb_respond( 'RESULT=OK&COUNT=1' );
+	WPLB_QSOs::delete( array( $e ) );
+	wplb_check( 'DELETE' === wplb_request()['ACTION'] && 'POTA-KEY0-0000-1111' === wplb_request()['KEY'] && '6001' === wplb_request()['LOGIDS'], 'deleted from the QRZ.com logbook of its logbook' );
+
+	/* Deleting logbooks */
+	wplb_check( is_wp_error( WPLB_Logbooks::delete( $pota, $pota ) ) && is_wp_error( WPLB_Logbooks::delete( 999999 ) ), 'invalid deletes refused' );
+	update_option( WPLB_Logbooks::DEFAULT_OPTION, $portable );
+	wplb_respond();
+	wplb_check( true === WPLB_Logbooks::delete( $portable, $main ), 'delete a logbook' );
+	wplb_check( null === WPLB_Logbooks::get( $portable ) && $main === (int) WPLB_QSOs::get( $b )['logbook_id'] && 'uploaded' === WPLB_QSOs::get( $b )['qrz_status'] && $main === WPLB_Logbooks::default_id(), 'its QSOs moved; the receiving logbook is the new default' );
+	$y = WPLB_QSOs::insert( array( 'callsign' => 'LU1X', 'time_on' => '2026-10-17 14:00:00', 'band' => '20m', 'mode' => 'FT8', 'logbook_id' => $sota, 'qrz_status' => 'uploaded', 'qrz_logid' => 7001 ) );
+	wplb_respond( 'RESULT=OK&COUNT=1' );
+	WPLB_Logbooks::delete( $sota );
+	wplb_check( null === WPLB_Logbooks::get( $sota ) && null === WPLB_QSOs::get( $y ) && '7001' === wplb_request()['LOGIDS'], 'delete a logbook with its QSOs, also on QRZ.com' );
+	wplb_settings( array( 'qrz_delete_remote' => 0 ) );
+	WPLB_Logbooks::delete( $pota, $main );
+	WPLB_Logbooks::delete( $contest, $main );
+	wplb_check( count( WPLB_Logbooks::all() ) > 1 || is_wp_error( WPLB_Logbooks::delete( $main ) ), 'the last logbook cannot be deleted' );
 } finally {
 	wplb_reset();
+	foreach ( array_keys( WPLB_Logbooks::all() ) as $wplb_logbook ) {
+		if ( ! in_array( $wplb_logbook, $GLOBALS['wplb_saved']['logbooks'], true ) ) {
+			$wpdb->delete( WPLB_Logbooks::table(), array( 'id' => $wplb_logbook ) );
+		}
+	}
+	update_option( WPLB_Logbooks::DEFAULT_OPTION, $GLOBALS['wplb_saved']['default'] );
+	WPLB_Logbooks::flush();
 	foreach ( array( WPLB_Settings::OPTION => 'settings', WPLB_Settings::API_KEY_OPTION => 'key' ) as $wplb_option => $wplb_saved ) {
 		if ( false === $GLOBALS['wplb_saved'][ $wplb_saved ] ) {
 			delete_option( $wplb_option );
