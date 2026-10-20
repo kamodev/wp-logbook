@@ -16,8 +16,11 @@ if ( empty( $wplb_settings['delete_on_uninstall'] ) ) {
 
 global $wpdb;
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}wplb_qsos" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}wplb_logbooks" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 delete_option( 'wplb_settings' );
 delete_option( 'wplb_qrz_api_key' );
 delete_option( 'wplb_db_version' );
+delete_option( 'wplb_default_logbook' );
 delete_metadata( 'user', 0, 'wplb_per_page', '', true );
+delete_metadata( 'user', 0, 'wplb_last_logbook', '', true );

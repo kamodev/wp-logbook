@@ -35,7 +35,8 @@ class WPLB_Shortcodes {
 	/**
 	 * [wp_logbook_stats] – totals and band/mode breakdown.
 	 *
-	 * Attributes: show (comma separated: totals, bands, modes), station.
+	 * Attributes: show (comma separated: totals, bands, modes), station,
+	 * logbook (comma separated slugs, titles or IDs).
 	 *
 	 * @param array|string $atts Shortcode attributes.
 	 * @return string
@@ -45,6 +46,7 @@ class WPLB_Shortcodes {
 			array(
 				'show'    => 'totals,bands,modes',
 				'station' => '',
+				'logbook' => '',
 			),
 			$atts,
 			'wp_logbook_stats'
@@ -52,8 +54,12 @@ class WPLB_Shortcodes {
 
 		wp_enqueue_style( 'wplb-public' );
 
-		$show  = array_map( 'trim', explode( ',', strtolower( $atts['show'] ) ) );
-		$stats = WPLB_QSOs::stats( array( 'station_callsign' => $atts['station'] ) );
+		$show = array_map( 'trim', explode( ',', strtolower( $atts['show'] ) ) );
+		$args = array( 'station_callsign' => $atts['station'] );
+		if ( '' !== trim( $atts['logbook'] ) ) {
+			$args['logbook'] = WPLB_Logbooks::resolve_list( $atts['logbook'] );
+		}
+		$stats = WPLB_QSOs::stats( $args );
 
 		ob_start();
 		echo '<div class="wplb-stats">';

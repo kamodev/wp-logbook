@@ -24,7 +24,7 @@ class WPLB_Log_View {
 	 *
 	 * @var string[]
 	 */
-	const DEFAULT_FILTERS = array( 'date', 'callsign', 'band', 'mode', 'grid', 'state', 'county', 'pota', 'sota' );
+	const DEFAULT_FILTERS = array( 'logbook', 'date', 'callsign', 'band', 'mode', 'grid', 'state', 'county', 'pota', 'sota' );
 
 	/**
 	 * Alternative names accepted in the filters attribute.
@@ -57,6 +57,11 @@ class WPLB_Log_View {
 	 */
 	public static function filters() {
 		return array(
+			'logbook'   => array(
+				'label' => __( 'Logbook', 'wp-logbook' ),
+				'type'  => 'select',
+				'arg'   => 'logbook',
+			),
 			'date'      => array(
 				'label' => __( 'Date (UTC)', 'wp-logbook' ),
 				'type'  => 'date',
@@ -467,7 +472,10 @@ class WPLB_Log_View {
 		$filter = $filters[ $key ];
 
 		if ( isset( $filter['arg'] ) ) {
-			if ( 'confirmed' === $filter['arg'] ) {
+			if ( 'logbook' === $filter['arg'] ) {
+				// Slugs, titles or IDs, comma separated; an unknown logbook matches nothing.
+				$value = WPLB_Logbooks::resolve_list( $value );
+			} elseif ( 'confirmed' === $filter['arg'] ) {
 				$value = self::is_yes( $value ) || 'confirmed' === strtolower( $value ) ? 'yes' : 'no';
 			} elseif ( 'callsign_starts' === $filter['arg'] ) {
 				$value = strtoupper( preg_replace( '/\s+/', '', $value ) );
@@ -642,6 +650,16 @@ class WPLB_Log_View {
 					'yes' => __( 'Confirmed', 'wp-logbook' ),
 					'no'  => __( 'Not confirmed', 'wp-logbook' ),
 				);
+			case 'logbook':
+				$choices = array();
+				foreach ( WPLB_QSOs::distinct_values( 'logbook_id', $base ) as $id ) {
+					$logbook = WPLB_Logbooks::get( $id );
+					if ( $logbook ) {
+						$choices[ $logbook['slug'] ] = $logbook['title'];
+					}
+				}
+				asort( $choices );
+				return $choices;
 		}
 
 		$labels  = 'continent' === $key ? WPLB_Fields::continents() : array();
@@ -780,6 +798,8 @@ class WPLB_Log_View {
 			case 'cont':
 				$continents = WPLB_Fields::continents();
 				return isset( $continents[ $qso['cont'] ] ) ? $continents[ $qso['cont'] ] : (string) $qso['cont'];
+			case 'logbook':
+				return WPLB_Logbooks::title( $qso['logbook_id'] );
 			case 'cnty':
 			case 'pota_ref':
 			case 'my_pota_ref':

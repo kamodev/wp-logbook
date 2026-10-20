@@ -1,6 +1,6 @@
 # WP Logbook
 
-An amateur radio logbook for WordPress. Log your contacts (QSOs) from the WordPress dashboard, import and export ADIF, show your log on your site as a filterable table or as tiles, and optionally upload contacts to your [QRZ.com Logbook](https://logbook.qrz.com/) through the QRZ.com Logbook API.
+An amateur radio logbook for WordPress. Log your contacts (QSOs) from the WordPress dashboard in one or more logbooks, import and export ADIF, show your log on your site as a filterable table or as tiles, and optionally upload contacts to your [QRZ.com Logbook](https://logbook.qrz.com/) through the QRZ.com Logbook API.
 
 The QRZ.com upload is optional. The logbook works the same with it switched off.
 
@@ -8,7 +8,7 @@ The QRZ.com upload is optional. The logbook works the same with it switched off.
 
 - [Features](#features)
 - [Requirements](#requirements) · [Installation](#installation)
-- [Logging contacts](#logging-contacts)
+- [Logging contacts](#logging-contacts) · [Logbooks](#logbooks)
 - [QRZ.com Logbook upload (optional)](#qrzcom-logbook-upload-optional)
 - [Showing your log on your site](#showing-your-log-on-your-site): [quick start](#quick-start), [table and tiles](#table-and-tiles), [pagination](#pagination), [filters](#filters), [recipes](#recipes), [attribute reference](#attribute-reference), [styling](#styling)
 - [Import and export](#import-and-export)
@@ -18,7 +18,8 @@ The QRZ.com upload is optional. The logbook works the same with it switched off.
 ## Features
 
 - **Quick QSO entry**: the start time follows a UTC clock until you change it. The band is filled in from the frequency, and RST defaults to 59, 599 or blank (dB reports) depending on the mode. While you type a callsign, the form shows your earlier contacts with that station and fills in name, QTH, grid and country from the last one. **Save & log another** keeps your band and mode.
-- **Logbook screen**: search, band and mode filters, sorting, and bulk actions (ADIF export, delete, QRZ.com upload).
+- **Several logbooks**: keep separate logs for your home station, portable or POTA activations, contests or a second callsign. Each logbook has a title, its own station callsign and, if you like, its own QRZ.com logbook. Logging, import, export and the public shortcodes can each use one logbook or all of them.
+- **Logbook screen**: search, logbook, band and mode filters, sorting, and bulk actions (ADIF export, move to another logbook, delete, QRZ.com upload).
 - **ADIF field layout**: 73 fields that follow the ADIF 3.1.8 specification (see [field layout](#logbook-field-layout)), covering contest exchanges, POTA/SOTA/WWFF, satellites, and paper/LoTW/eQSL QSL status.
 - **ADIF import** with duplicate detection. Handles files from other logging programs: submodes written as modes (`MODE=USB`, `MODE=FT4`), frequencies in kHz, UTF-8 or Latin-1 text, and lengths counted in bytes or characters.
 - **Export** to ADIF (`.adi`) or CSV, either everything or only selected QSOs.
@@ -35,9 +36,10 @@ The QRZ.com upload is optional. The logbook works the same with it switched off.
 ## Installation
 
 1. Copy this folder to `wp-content/plugins/wp-logbook`, or upload a zip of it under **Plugins → Add New → Upload Plugin**.
-2. Activate **WP Logbook**. Activation creates the `{prefix}wplb_qsos` table.
+2. Activate **WP Logbook**. Activation creates the `{prefix}wplb_qsos` and `{prefix}wplb_logbooks` tables and a first logbook called *My logbook*.
 3. Under **Logbook → Settings**, enter your station callsign and grid square. They pre-fill every new QSO.
-4. Log contacts under **Logbook → Log a QSO**, or import an existing log under **Logbook → Import / Export**.
+4. Optional: add more logbooks under **Logbook → Logbooks** (see [Logbooks](#logbooks)).
+5. Log contacts under **Logbook → Log a QSO**, or import an existing log under **Logbook → Import / Export**.
 
 ## Logging contacts
 
@@ -46,6 +48,46 @@ All times are UTC. Required fields are callsign, start date and time, mode, and 
 The mode picker lists common modes first. Some of them are ADIF submodes and are stored as the correct pair: USB is stored as `SSB`/`USB`, FT4 as `MFSK`/`FT4`, JS8 as `MFSK`/`JS8`, and DMR as `DIGITALVOICE`/`DMR`. Every other ADIF mode follows.
 
 The less common fields are in collapsible sections: contacted station details, activations and contests, my station, propagation and satellite, QSL, and private notes.
+
+The **Logbook** menu at the top of the form chooses the logbook the QSO goes into (see below).
+
+## Logbooks
+
+Every QSO belongs to one logbook. You start with one, *My logbook*; when you upgrade from version 1.1 or older, all your existing QSOs are put into it. Add more logbooks when you want to keep contacts apart, for example:
+
+- your home station and your portable or POTA/SOTA activations;
+- each contest, or one logbook for all contests;
+- a second callsign, a club callsign or a special event station, each with its own QRZ.com logbook.
+
+![The Logbooks screen](docs/images/logbooks.png)
+
+### Managing logbooks
+
+Open **Logbook → Logbooks**. The form on the left adds a logbook, and the table lists them with their shortcode attribute, station callsign, number of QSOs and QRZ.com set-up. Click a title to edit it. The row links open the logbook's QSOs, log a QSO into it, download it as ADIF, or delete it.
+
+| Setting | What it does |
+|---|---|
+| Title | Name shown in the admin and in the logbook filter of public pages. Must be unique. |
+| Slug | Picks the logbook in shortcodes (`logbook="pota"`) and names export files. Made from the title when left empty. |
+| Station callsign | Pre-filled on new QSOs in this logbook, used for imported QSOs without one, and sent to QRZ.com for QSOs without one. Empty means the station callsign from the settings. |
+| Description | Notes for yourself. Not shown on the site. |
+| Default | New QSOs and imports go to the default logbook unless you choose another. |
+| QRZ.com upload | Whether the QSOs of this logbook go to QRZ.com at all. |
+| QRZ.com API key | Only for a logbook that goes to another QRZ.com logbook than the default key (see [one QRZ.com logbook per callsign](#one-qrzcom-logbook-per-callsign)). |
+
+The QRZ.com settings of a logbook are shown to administrators only (`manage_options`), like the other QRZ.com settings.
+
+### Logging into a logbook
+
+- **Log a QSO** opens with the logbook you used last. The **Log a QSO** link of a logbook, and **Save & log another**, keep the logbook.
+- Choosing another logbook in the form also switches the station callsign of a new QSO to that logbook's callsign, unless you typed a different one yourself.
+- To move a QSO, choose another logbook on its edit screen. To move many, tick them in the list and use the bulk action **Move to logbook**.
+
+The QSO list shows all logbooks with a **Logbook** column; the logbook menu above the list, next to the band and mode filters, shows one logbook at a time. Duplicate warnings and the duplicate check of imports look within one logbook, so the same contact can be in two logbooks.
+
+### Deleting a logbook
+
+Deleting a logbook asks what happens to its QSOs: move them to another logbook, or delete them. Deleted QSOs are also deleted from QRZ.com when **Deletions** is switched on in the settings. If you delete the default logbook, the logbook that receives its QSOs becomes the default. The last logbook cannot be deleted.
 
 ## QRZ.com Logbook upload (optional)
 
@@ -60,6 +102,16 @@ The less common fields are in collapsible sections: contacted station details, a
 3. Make sure your **station callsign** matches the callsign of the QRZ.com logbook. QRZ.com rejects QSOs whose `STATION_CALLSIGN` does not match, and the connection test warns you about a mismatch.
 
 The key is stored in its own option that is not autoloaded, and it is never printed back into the settings page.
+
+### One QRZ.com logbook per callsign
+
+QRZ.com keeps a separate logbook, with its own API key, for each callsign. The key in the settings is the **default key**: every logbook uploads with it unless the logbook has a key of its own. So:
+
+- With one callsign, enter the key in the settings and you are done. All logbooks upload to the same QRZ.com logbook.
+- For a second callsign (a club station, a special event call), give its logbook the key of that callsign's QRZ.com logbook under **Logbook → Logbooks**, and set the logbook's station callsign to match. **Test connection** on the logbook's edit screen checks the key against that callsign.
+- To keep a logbook off QRZ.com, untick **Upload the QSOs of this logbook to QRZ.com**. Its QSOs stay "Not uploaded" and are skipped by uploads.
+
+Moving QSOs to a logbook that uploads with a different key moves them between QRZ.com logbooks too: they are queued for upload to the new one, and deleted from the old one when **Deletions** is switched on.
 
 ### How uploads work
 
@@ -82,7 +134,7 @@ Settings:
 
 **Upload now** on the logbook screen, and the bulk action **Upload to QRZ.com now**, send QSOs in batches of 10 with a progress bar, so large logs don't hit PHP time limits. An upload stops at the first problem that isn't specific to one QSO, such as an invalid key, `RESULT=AUTH`, a network error or an HTTP error, and leaves the remaining QSOs waiting. QSOs that QRZ.com reports as duplicates count as uploaded. Failed uploads can be queued again with **Retry them**. Editing a failed QSO also queues it again.
 
-Every field is sent to QRZ.com except your private **notes** and the contacted station's **email** address. If a QSO has no station callsign, the one from the settings is sent.
+Every field is sent to QRZ.com except your private **notes** and the contacted station's **email** address. If a QSO has no station callsign, the one of its logbook (or else of the settings) is sent.
 
 ### QRZ.com Logbook API calls
 
@@ -147,6 +199,7 @@ Tiles fill the available width with as many per row as fit, and stack one per ro
 |---|---|
 | `time_on` | Date and time, UTC |
 | `callsign` | Callsign |
+| `logbook` | Title of the QSO's logbook |
 | `band` | Band |
 | `freq` | Frequency in MHz |
 | `mode` | Submode when there is one (USB, FT4), otherwise the mode |
@@ -199,6 +252,7 @@ The filter form sits above the QSOs. A visitor fills in one or more fields and c
 
 | Filter | Shows QSOs where… | Control | On by default |
 |---|---|---|:-:|
+| `logbook` | the QSO is in the chosen logbook | Menu | ✓ |
 | `date` | the contact was between the two dates (UTC, both days included); either date can be left empty | From / To dates | ✓ |
 | `callsign` | the callsign starts with the text, also after a prefix: `W1AW` finds `W1AW`, `W1AW/P` and `VE3/W1AW`; `DL` finds every DL station | Text | ✓ |
 | `band` | the band is the chosen one | Menu | ✓ |
@@ -223,7 +277,7 @@ How matching works:
 
 - Text filters ignore upper and lower case.
 - **Starts with** filters (`callsign`, `grid`, `iota`) are good for prefixes. **Contains** filters (`county`, `pota`, `sota`, `wwff`, `my_pota`, `my_sota`) also find one park in a multi-park QSO such as `US-1234,US-5678`.
-- Menus list only values that occur in the QSOs this logbook shows. A menu with only one value is left out, because it couldn't filter anything.
+- Menus list only values that occur in the QSOs this logbook shows. A menu with only one value is left out, because it couldn't filter anything. So the `logbook` menu only appears once your QSOs are in more than one logbook.
 - Times are UTC, like everything in the log.
 
 ### Choosing which filters appear
@@ -249,6 +303,7 @@ A filter can also be fixed to a value in the shortcode. A fixed filter applies t
 
 | Attribute | Value | Example |
 |---|---|---|
+| `logbook` | Slug, title or ID of a logbook; several separated by commas | `logbook="pota-activations"` `logbook="home,portable"` |
 | `date_from`, `date_to` | Date as YYYY-MM-DD (UTC, both days included) | `date_from="2026-01-01" date_to="2026-12-31"` |
 | `callsign` | One station, including its portable forms (exact match, not starts-with) | `callsign="W1AW"` |
 | `band` | ADIF band | `band="6m"` |
@@ -263,11 +318,15 @@ A filter can also be fixed to a value in the shortcode. A fixed filter applies t
 
 Every POTA, SOTA and WWFF reference contains a hyphen, so `pota="-"` shows only QSOs that have a POTA park.
 
+The slug of each logbook is listed under **Logbook → Logbooks**. A `logbook` value that matches no logbook shows no QSOs, so a renamed or deleted logbook never shows the wrong contacts.
+
 ### Recipes
 
 | Page | Shortcode |
 |---|---|
 | Complete log, every filter, visitor-chosen page size | `[wp_logbook filters="all" page_sizes="25,50,100"]` |
+| One logbook per page | `[wp_logbook logbook="pota-activations"]` |
+| All logbooks, with the logbook as a column | `[wp_logbook columns="time_on,callsign,logbook,band,mode"]` |
 | "Am I in your log?" | `[wp_logbook filters="callsign" columns="time_on,callsign,band,mode"]` |
 | Latest contacts on the home page | `[wp_logbook_tiles pagination="no" page_size="6" filters="none"]` |
 | One POTA activation | `[wp_logbook_tiles my_pota="US-1234" filters="callsign,band,mode" columns="time_on,callsign,band,mode,state,confirmed"]` |
@@ -288,6 +347,7 @@ Filtered views are ordinary links, so visitors can bookmark or share them, and y
 ```
 https://example.com/logbook/?wplb_state=CT&wplb_band=20m
 https://example.com/logbook/?wplb_callsign=W1AW
+https://example.com/logbook/?wplb_logbook=pota-activations
 https://example.com/logbook/?wplb_from=2026-06-01&wplb_to=2026-06-30&wplb_pg=2
 ```
 
@@ -300,13 +360,20 @@ https://example.com/logbook/?wplb_from=2026-06-01&wplb_to=2026-06-30&wplb_pg=2
 
 A parameter only works when its filter is shown on that page.
 
-### More than one logbook on a page
+### More than one log on a page
 
-Give each logbook an `id`. Its filters and page links then only affect that logbook, and its parameters become `wplb_<id>_<filter>`:
+Give each shortcode an `id`. Its filters and page links then only affect that shortcode, and its parameters become `wplb_<id>_<filter>`:
 
 ```
 [wp_logbook_tiles id="latest" pagination="no" page_size="4" filters="none"]
 [wp_logbook id="full" page_size="25"]
+```
+
+Combined with `logbook`, a page can show two logbooks side by side:
+
+```
+[wp_logbook_tiles id="pota" logbook="pota-activations" pagination="no" page_size="4" filters="none"]
+[wp_logbook id="home" logbook="home-station"]
 ```
 
 ### Attribute reference
@@ -318,7 +385,7 @@ Give each logbook an `id`. Its filters and page links then only affect that logb
 | `pagination` | `yes`, `no` | `yes` |
 | `page_size` | 1–500 | **QSOs per page** setting |
 | `page_sizes` | Comma-separated numbers | – |
-| `filters` | Comma-separated filter names, `all`, `none` | `date,callsign,band,mode,grid,state,county,pota,sota` |
+| `filters` | Comma-separated filter names, `all`, `none` | `logbook,date,callsign,band,mode,grid,state,county,pota,sota` |
 | `filter_<name>` | `yes`, `no` | – |
 | `collapse_filters` | `yes`, `no` | `no` |
 | `id` | Letters, numbers, `-`, `_` | – |
@@ -355,6 +422,11 @@ The shortcodes load a small stylesheet (handle `wplb-public`) that leaves fonts 
 
 Developers can change attribute defaults for the whole site with WordPress's `shortcode_atts_wp_logbook` and `shortcode_atts_wp_logbook_tiles` filters.
 
+### Upgrading from 1.1
+
+- Pages show a **Logbook** filter by default, but only once your QSOs are in more than one logbook. `filter_logbook="no"` hides it.
+- Without a `logbook` attribute, shortcodes show the QSOs of all logbooks, as before.
+
 ### Upgrading from 1.0
 
 - The separate "Are you in the log?" box is replaced by the callsign filter, which matches callsigns that **start with** the text. The **Callsign lookup** setting is now called **Callsign search** and decides whether that filter is shown by default.
@@ -369,12 +441,17 @@ Shows totals (QSOs, unique callsigns, DXCC entities or countries, grid squares, 
 |---|---|---|
 | `show` | `totals,bands,modes` | Which parts to show. |
 | `station` | – | Only QSOs made as this station callsign. |
+| `logbook` | – | Only QSOs in these logbooks (slugs, titles or IDs, separated by commas). |
 
 ## Import and export
 
-- **ADIF export** writes ADIF 3.1.8 `.adi` files in plain ASCII, as the ADI format requires. Accented letters are transliterated (`José` → `Jose`), so every reader agrees on field lengths. The QRZ.com state is included as `QRZCOM_QSO_UPLOAD_STATUS` / `QRZCOM_QSO_UPLOAD_DATE`.
-- **CSV export** keeps the full UTF-8 text and all columns. Use it for spreadsheets or a complete backup.
-- **ADIF import** skips QSOs already in the log, meaning the same callsign, band and mode within one minute. It fills in a station callsign for records without one, and can mark imported QSOs as already on QRZ.com. `APP_QRZLOG_LOGID` and `QRZCOM_QSO_UPLOAD_STATUS` from QRZ.com exports are kept. Records with problems are reported with the reason.
+Both are under **Logbook → Import / Export**.
+
+- **Export** one logbook or all of them, optionally limited to a date range or band, as ADIF or CSV. File names start with the logbook's slug, e.g. `pota-activations-20261020-140512.adi`. Each logbook's row on the **Logbooks** screen also has an **Export ADIF** link, and the bulk action **Export to ADIF** exports the QSOs you tick in the list.
+- **ADIF export** writes ADIF 3.1.8 `.adi` files in plain ASCII, as the ADI format requires. Accented letters are transliterated (`José` → `Jose`), so every reader agrees on field lengths. The QRZ.com state is included as `QRZCOM_QSO_UPLOAD_STATUS` / `QRZCOM_QSO_UPLOAD_DATE`, and the logbook as the application-defined fields `APP_WPLOGBOOK_LOGBOOK` (title) and `APP_WPLOGBOOK_LOGBOOK_SLUG`. Other programs ignore these fields; they are never sent to QRZ.com.
+- **CSV export** keeps the full UTF-8 text and all columns, with the logbook title in the first column. Use it for spreadsheets or a complete backup.
+- **ADIF import** adds the QSOs to the logbook you choose under **Import into**, or to a new logbook: choose **A new logbook…** and type its title. With **QSOs exported from WP Logbook go back into the logbook named in the file** ticked (the default), records that carry `APP_WPLOGBOOK_LOGBOOK` go into that logbook instead, which is created if it doesn't exist. This restores a backup of several logbooks in one go, or moves logbooks to another site.
+- The import skips QSOs already in the target logbook, meaning the same callsign, band and mode within one minute. Records without a station callsign get the one you enter, or else the logbook's. It can mark imported QSOs as already on QRZ.com. `APP_QRZLOG_LOGID` and `QRZCOM_QSO_UPLOAD_STATUS` from QRZ.com exports are kept. The result lists how many QSOs went into each logbook, and records with problems are reported with the reason.
 
 ## Logbook field layout
 
@@ -488,14 +565,14 @@ QSOs are stored in their own table (`{prefix}wplb_qsos`). Each column correspond
 |---|---|---|:-:|:-:|
 | Notes (private) | `NOTES` | Multi-line text |  | — |
 
-Bookkeeping columns: `qrz_status`, `qrz_logid`, `qrz_upload_date`, `qrz_message`, `created_at`, `updated_at`.
+Bookkeeping columns: `logbook_id`, `qrz_status`, `qrz_logid`, `qrz_upload_date`, `qrz_message`, `created_at`, `updated_at`.
 
 Bands follow the ADIF band plan, from `2190m` to `submm`, with frequency limits used to derive the band. Modes are the ADIF 3.1.8 mode list, and their submodes are stored separately (`MODE` + `SUBMODE`).
 
 ## Privacy and data
 
 - Private notes and email addresses are never shown publicly and never sent to QRZ.com. Only public fields can be shown on the site or used as filters.
-- Deleting the plugin keeps your log unless **Delete all QSOs and settings when the plugin is deleted** is ticked under **Logbook → Settings**.
+- Deleting the plugin keeps your log unless **Delete all QSOs and settings when the plugin is deleted** is ticked under **Logbook → Settings**. Then the QSOs, the logbooks and the settings are all removed.
 - By default only administrators (`manage_options`) can use the logbook. The `wplb_capability` filter changes the capability for the logbook screens; the settings always need `manage_options`.
 
 ## For developers
@@ -513,7 +590,9 @@ Filters:
 | `wplb_qrz_batch_size` | QSOs per upload request from the logbook screen (default 10). |
 | `wplb_qrz_cron_batch_size` | QSOs per background upload run (default 50). |
 
-Actions: `wplb_qso_inserted ( $id, $row )`, `wplb_qso_updated ( $id, $changes )` and `wplb_before_delete_qsos ( $ids )`.
+Actions: `wplb_qso_inserted ( $id, $row )`, `wplb_qso_updated ( $id, $changes )`, `wplb_before_delete_qsos ( $ids )`, `wplb_logbook_created ( $id )` and `wplb_logbook_deleted ( $id, $moved_to )` (`$moved_to` is 0 when the QSOs were deleted).
+
+Logbooks are kept in `{prefix}wplb_logbooks`, and `WPLB_Logbooks` has helpers such as `WPLB_Logbooks::resolve( 'slug' )`, `create()`, `update()` and `move_qsos( $ids, $logbook_id )`.
 
 Tests and coding standards:
 

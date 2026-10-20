@@ -16,7 +16,8 @@ class WPLB_Plugin {
 	 * Register hooks.
 	 */
 	public static function init() {
-		add_action( 'plugins_loaded', array( 'WPLB_Install', 'maybe_upgrade' ) );
+		// On init, not plugins_loaded: the upgrade may create the translated default logbook.
+		add_action( 'init', array( 'WPLB_Install', 'maybe_upgrade' ), 1 );
 		add_action( 'init', array( __CLASS__, 'load_textdomain' ) );
 
 		WPLB_QRZ_Sync::init();

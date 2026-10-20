@@ -60,11 +60,13 @@ class WPLB_Admin {
 		add_submenu_page( 'wplb-logbook', __( 'Logbook', 'wp-logbook' ), __( 'All QSOs', 'wp-logbook' ), $cap, 'wplb-logbook', array( __CLASS__, 'render_list' ) );
 
 		self::$hooks['edit']     = add_submenu_page( 'wplb-logbook', __( 'Log a QSO', 'wp-logbook' ), __( 'Log a QSO', 'wp-logbook' ), $cap, 'wplb-qso', array( 'WPLB_QSO_Form', 'render' ) );
+		self::$hooks['logbooks'] = add_submenu_page( 'wplb-logbook', __( 'Logbooks', 'wp-logbook' ), __( 'Logbooks', 'wp-logbook' ), $cap, 'wplb-logbooks', array( 'WPLB_Logbooks_Screen', 'render' ) );
 		self::$hooks['tools']    = add_submenu_page( 'wplb-logbook', __( 'Import / Export', 'wp-logbook' ), __( 'Import / Export', 'wp-logbook' ), $cap, 'wplb-tools', array( __CLASS__, 'render_tools' ) );
 		self::$hooks['settings'] = add_submenu_page( 'wplb-logbook', __( 'Logbook Settings', 'wp-logbook' ), __( 'Settings', 'wp-logbook' ), 'manage_options', 'wplb-settings', array( __CLASS__, 'render_settings' ) );
 
 		add_action( 'load-' . self::$hooks['list'], array( __CLASS__, 'load_list' ) );
 		add_action( 'load-' . self::$hooks['edit'], array( 'WPLB_QSO_Form', 'load' ) );
+		add_action( 'load-' . self::$hooks['logbooks'], array( 'WPLB_Logbooks_Screen', 'load' ) );
 	}
 
 	/**
@@ -277,6 +279,25 @@ class WPLB_Admin {
 			exit;
 		}
 
+		// "move-<logbook ID>": move the selection to another logbook.
+		if ( 0 === strpos( $action, 'move-' ) ) {
+			$logbook = (int) substr( $action, 5 );
+			$count   = WPLB_Logbooks::move_qsos( $ids, $logbook );
+			self::add_notice(
+				esc_html(
+					sprintf(
+						/* translators: 1: number of QSOs, 2: logbook title */
+						_n( '%1$s QSO moved to %2$s.', '%1$s QSOs moved to %2$s.', $count, 'wp-logbook' ),
+						number_format_i18n( $count ),
+						WPLB_Logbooks::title( $logbook )
+					)
+				)
+			);
+			self::add_remote_delete_notice();
+			wp_safe_redirect( $redirect );
+			exit;
+		}
+
 		switch ( $action ) {
 			case 'export':
 				self::send_export(
@@ -324,9 +345,14 @@ class WPLB_Admin {
 		$table = self::$table;
 		$table->prepare_items();
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- view filter only.
+		$logbook = isset( $_GET['logbook'] ) ? WPLB_Logbooks::get( absint( $_GET['logbook'] ) ) : null;
+		$heading = $logbook ? $logbook['title'] : __( 'Logbook', 'wp-logbook' );
+		$log_url = admin_url( 'admin.php?page=wplb-qso' . ( $logbook ? '&logbook=' . (int) $logbook['id'] : '' ) );
+
 		echo '<div class="wrap wplb-wrap">';
-		echo '<h1 class="wp-heading-inline">' . esc_html__( 'Logbook', 'wp-logbook' ) . '</h1> ';
-		printf( '<a href="%s" class="page-title-action">%s</a>', esc_url( admin_url( 'admin.php?page=wplb-qso' ) ), esc_html__( 'Log a QSO', 'wp-logbook' ) );
+		echo '<h1 class="wp-heading-inline">' . esc_html( $heading ) . '</h1> ';
+		printf( '<a href="%s" class="page-title-action">%s</a>', esc_url( $log_url ), esc_html__( 'Log a QSO', 'wp-logbook' ) );
 		echo '<hr class="wp-header-end">';
 
 		self::render_notices();
@@ -352,17 +378,18 @@ class WPLB_Admin {
 		if ( ! WPLB_Settings::get( 'qrz_enabled' ) ) {
 			return;
 		}
-		if ( '' === WPLB_Settings::api_key() ) {
+		if ( ! WPLB_QRZ_Sync::is_enabled() ) {
 			printf(
 				'<div class="notice notice-warning inline"><p>%s <a href="%s">%s</a></p></div>',
-				esc_html__( 'QRZ.com upload is switched on but no API key is saved.', 'wp-logbook' ),
+				esc_html__( 'QRZ.com upload is switched on but no logbook can upload: add an API key in the settings, or to a logbook.', 'wp-logbook' ),
 				esc_url( admin_url( 'admin.php?page=wplb-settings' ) ),
-				esc_html__( 'Add your key in the settings.', 'wp-logbook' )
+				esc_html__( 'Open the settings.', 'wp-logbook' )
 			);
 			return;
 		}
 
-		$counts  = WPLB_QSOs::count_by_qrz_status();
+		// Logbooks that do not upload to QRZ.com are left out of these counts.
+		$counts  = WPLB_QSOs::count_by_qrz_status( WPLB_Logbooks::qrz_logbook_ids() );
 		$waiting = $counts['pending'] + $counts['modified'];
 
 		echo '<div class="wplb-qrz-panel" id="wplb-qrz-panel">';
@@ -400,6 +427,9 @@ class WPLB_Admin {
 	public static function render_tools() {
 		$bands    = array_keys( WPLB_Fields::bands() );
 		$max_size = size_format( wp_max_upload_size() );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- preselects a logbook only.
+		$current = isset( $_GET['logbook'] ) && WPLB_Logbooks::get( absint( $_GET['logbook'] ) ) ? absint( $_GET['logbook'] ) : 0;
+		$counts  = WPLB_Logbooks::counts();
 
 		echo '<div class="wrap wplb-wrap">';
 		echo '<h1>' . esc_html__( 'Import / Export', 'wp-logbook' ) . '</h1>';
@@ -412,6 +442,12 @@ class WPLB_Admin {
 		printf( '<form method="post" action="%s">', esc_url( admin_url( 'admin-post.php' ) ) );
 		wp_nonce_field( 'wplb_export' );
 		echo '<input type="hidden" name="action" value="wplb_export">';
+		printf( '<p><label for="wplb-export-logbook">%s</label><br><select id="wplb-export-logbook" name="logbook"><option value="">%s</option>', esc_html__( 'Logbook', 'wp-logbook' ), esc_html__( 'All logbooks', 'wp-logbook' ) );
+		foreach ( WPLB_Logbooks::choices() as $id => $title ) {
+			/* translators: 1: logbook title, 2: number of QSOs */
+			printf( '<option value="%d"%s>%s</option>', (int) $id, selected( $current, $id, false ), esc_html( sprintf( __( '%1$s (%2$s QSOs)', 'wp-logbook' ), $title, number_format_i18n( $counts[ $id ] ) ) ) );
+		}
+		echo '</select></p>';
 		echo '<p class="wplb-inline-fields">';
 		printf( '<label>%s <input type="date" name="date_from"></label> ', esc_html__( 'From', 'wp-logbook' ) );
 		printf( '<label>%s <input type="date" name="date_to"></label> ', esc_html__( 'To', 'wp-logbook' ) );
@@ -439,14 +475,25 @@ class WPLB_Admin {
 			/* translators: %s: maximum upload size */
 			esc_html( sprintf( __( 'Maximum size: %s', 'wp-logbook' ), $max_size ) )
 		);
-		printf( '<p><label><input type="checkbox" name="skip_duplicates" value="1" checked> %s</label></p>', esc_html__( 'Skip QSOs that are already in the log', 'wp-logbook' ) );
+		printf( '<p><label for="wplb-import-logbook">%s</label><br><select id="wplb-import-logbook" name="logbook">', esc_html__( 'Import into', 'wp-logbook' ) );
+		$target = $current ? $current : WPLB_Logbooks::default_id();
+		foreach ( WPLB_Logbooks::choices() as $id => $title ) {
+			printf( '<option value="%d"%s>%s</option>', (int) $id, selected( $target, $id, false ), esc_html( $title ) );
+		}
+		printf( '<option value="new">%s</option></select></p>', esc_html__( 'A new logbook…', 'wp-logbook' ) );
+		printf(
+			'<p class="wplb-new-logbook" hidden><label for="wplb-import-new">%s</label><br><input type="text" id="wplb-import-new" name="new_logbook" class="regular-text" maxlength="100"></p>',
+			esc_html__( 'Title of the new logbook', 'wp-logbook' )
+		);
+		printf( '<p><label><input type="checkbox" name="file_logbooks" value="1" checked> %s</label></p>', esc_html__( 'QSOs exported from WP Logbook go back into the logbook named in the file (missing logbooks are created)', 'wp-logbook' ) );
+		printf( '<p><label><input type="checkbox" name="skip_duplicates" value="1" checked> %s</label></p>', esc_html__( 'Skip QSOs that are already in the logbook', 'wp-logbook' ) );
 		if ( WPLB_Settings::get( 'qrz_enabled' ) ) {
 			printf( '<p><label><input type="checkbox" name="mark_uploaded" value="1"> %s</label></p>', esc_html__( 'These QSOs are already in my QRZ.com Logbook (do not upload them again)', 'wp-logbook' ) );
 		}
 		printf(
-			'<p><label for="wplb-import-station">%s</label><br><input type="text" id="wplb-import-station" name="station_callsign" class="regular-text wplb-uppercase" value="%s" maxlength="32"></p>',
+			'<p><label for="wplb-import-station">%s</label><br><input type="text" id="wplb-import-station" name="station_callsign" class="regular-text wplb-uppercase" value="" maxlength="32"><br><span class="description">%s</span></p>',
 			esc_html__( 'Station callsign for QSOs that do not have one', 'wp-logbook' ),
-			esc_attr( WPLB_Settings::get( 'station_callsign' ) )
+			esc_html__( 'Leave empty to use the station callsign of the logbook (or of the settings).', 'wp-logbook' )
 		);
 		submit_button( __( 'Import', 'wp-logbook' ), 'primary', 'submit', false );
 		echo '</form></div>';
@@ -526,10 +573,17 @@ class WPLB_Admin {
 		echo '<h2>' . esc_html__( 'QRZ.com Logbook (optional)', 'wp-logbook' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Upload your QSOs to your QRZ.com Logbook through the QRZ.com Logbook API. Your log works the same with this switched off.', 'wp-logbook' ) . '</p>';
 		echo '<p class="description">' . esc_html__( 'Find the API key on QRZ.com under Logbook → Settings for the logbook you want to upload to. QRZ.com may require a paid subscription for API uploads.', 'wp-logbook' ) . '</p>';
+		echo '<p class="description">' . wp_kses_post(
+			sprintf(
+				/* translators: %s: link to the Logbooks screen */
+				__( 'The key below is the default. A logbook that uploads to a different QRZ.com logbook (another callsign) can have its own key, and upload can be switched off per logbook, under %s.', 'wp-logbook' ),
+				'<a href="' . esc_url( admin_url( 'admin.php?page=wplb-logbooks' ) ) . '">' . esc_html__( 'Logbook → Logbooks', 'wp-logbook' ) . '</a>'
+			)
+		) . '</p>';
 		echo '<table class="form-table" role="presentation">';
 		self::checkbox_row( __( 'QRZ.com upload', 'wp-logbook' ), 'qrz_enabled', __( 'Upload QSOs to my QRZ.com Logbook', 'wp-logbook' ), $settings );
 
-		echo '<tr><th scope="row"><label for="wplb-qrz-key">' . esc_html__( 'API key', 'wp-logbook' ) . '</label></th><td>';
+		echo '<tr><th scope="row"><label for="wplb-qrz-key">' . esc_html__( 'Default API key', 'wp-logbook' ) . '</label></th><td>';
 		if ( WPLB_Settings::api_key_is_constant() ) {
 			/* translators: %s: masked API key */
 			echo '<p>' . esc_html( sprintf( __( 'Set by WPLB_QRZ_API_KEY in wp-config.php (%s).', 'wp-logbook' ), WPLB_Settings::mask( $api_key ) ) ) . '</p>';
@@ -594,14 +648,19 @@ class WPLB_Admin {
 		}
 		check_admin_referer( 'wplb_export' );
 
-		$format = isset( $_POST['format'] ) && 'csv' === $_POST['format'] ? 'csv' : 'adif';
-		$args   = array(
-			'date_from' => isset( $_POST['date_from'] ) ? sanitize_text_field( wp_unslash( $_POST['date_from'] ) ) : '',
-			'date_to'   => isset( $_POST['date_to'] ) ? sanitize_text_field( wp_unslash( $_POST['date_to'] ) ) : '',
-			'band'      => isset( $_POST['band'] ) ? sanitize_text_field( wp_unslash( $_POST['band'] ) ) : '',
+		// The Logbooks screen links here (GET); the export form posts.
+		$format  = isset( $_REQUEST['format'] ) && 'csv' === $_REQUEST['format'] ? 'csv' : 'adif';
+		$logbook = isset( $_REQUEST['logbook'] ) ? WPLB_Logbooks::get( absint( $_REQUEST['logbook'] ) ) : null;
+		$args    = array(
+			'date_from' => isset( $_REQUEST['date_from'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['date_from'] ) ) : '',
+			'date_to'   => isset( $_REQUEST['date_to'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['date_to'] ) ) : '',
+			'band'      => isset( $_REQUEST['band'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['band'] ) ) : '',
 			'order'     => 'ASC',
 		);
-		self::send_export( $args, $format );
+		if ( $logbook ) {
+			$args['logbook'] = (int) $logbook['id'];
+		}
+		self::send_export( $args, $format, $logbook ? $logbook['slug'] : 'logbook' );
 	}
 
 	/**
@@ -609,16 +668,17 @@ class WPLB_Admin {
 	 *
 	 * @param array  $args   WPLB_QSOs::query() filters.
 	 * @param string $format adif or csv.
+	 * @param string $name   Start of the file name.
 	 */
-	private static function send_export( array $args, $format ) {
-		$filename = 'logbook-' . gmdate( 'Ymd-His' ) . ( 'csv' === $format ? '.csv' : '.adi' );
+	private static function send_export( array $args, $format, $name = 'logbook' ) {
+		$filename = sanitize_file_name( $name . '-' . gmdate( 'Ymd-His' ) . ( 'csv' === $format ? '.csv' : '.adi' ) );
 
 		nocache_headers();
 		header( 'Content-Type: ' . ( 'csv' === $format ? 'text/csv; charset=utf-8' : 'text/plain; charset=us-ascii' ) );
 		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 
 		$out     = fopen( 'php://output', 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
-		$columns = array_merge( array_keys( WPLB_Fields::all() ), array( 'qrz_status', 'qrz_logid', 'qrz_upload_date' ) );
+		$columns = array_merge( array( 'logbook' ), array_keys( WPLB_Fields::all() ), array( 'qrz_status', 'qrz_logid', 'qrz_upload_date' ) );
 
 		if ( 'csv' === $format ) {
 			fwrite( $out, "\xEF\xBB\xBF" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- UTF-8 BOM for spreadsheet programs.
@@ -640,7 +700,8 @@ class WPLB_Admin {
 			$result       = WPLB_QSOs::query( $args );
 			foreach ( $result['items'] as $qso ) {
 				if ( 'csv' === $format ) {
-					$row = array();
+					$qso['logbook'] = WPLB_Logbooks::title( $qso['logbook_id'] );
+					$row            = array();
 					foreach ( $columns as $column ) {
 						$row[] = self::csv_cell( isset( $qso[ $column ] ) ? $qso[ $column ] : '' );
 					}
@@ -695,32 +756,59 @@ class WPLB_Admin {
 			set_time_limit( 0 );
 		}
 
-		$text    = (string) file_get_contents( $file['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$text   = (string) file_get_contents( $file['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$parsed = WPLB_ADIF::parse( $text );
+		if ( ! $parsed['records'] ) {
+			self::add_notice( esc_html__( 'No QSO records were found in that file. Is it an ADIF (.adi) file?', 'wp-logbook' ), 'error' );
+			wp_safe_redirect( $redirect );
+			exit;
+		}
+
+		// Target logbook: an existing one, or a new one created for this import.
+		$choice = isset( $_POST['logbook'] ) ? sanitize_key( wp_unslash( $_POST['logbook'] ) ) : '';
+		if ( 'new' === $choice ) {
+			$logbook = WPLB_Logbooks::create( array( 'title' => isset( $_POST['new_logbook'] ) ? sanitize_text_field( wp_unslash( $_POST['new_logbook'] ) ) : '' ) );
+			if ( is_wp_error( $logbook ) ) {
+				self::add_notice( esc_html( $logbook->get_error_message() ), 'error' );
+				wp_safe_redirect( $redirect );
+				exit;
+			}
+		} else {
+			$logbook = WPLB_Logbooks::get( absint( $choice ) ) ? absint( $choice ) : WPLB_Logbooks::default_id();
+		}
+
 		$station = isset( $_POST['station_callsign'] ) ? WPLB_Fields::normalize_callsign( sanitize_text_field( wp_unslash( $_POST['station_callsign'] ) ) ) : false;
 		$summary = WPLB_Import::adif(
 			$text,
 			array(
+				'logbook'          => $logbook,
+				'file_logbooks'    => ! empty( $_POST['file_logbooks'] ),
 				'skip_duplicates'  => ! empty( $_POST['skip_duplicates'] ),
 				'mark_uploaded'    => ! empty( $_POST['mark_uploaded'] ),
 				'station_callsign' => $station ? $station : '',
 			)
 		);
 
-		if ( ! $summary['records'] ) {
-			self::add_notice( esc_html__( 'No QSO records were found in that file. Is it an ADIF (.adi) file?', 'wp-logbook' ), 'error' );
-		} else {
-			$message = esc_html(
-				sprintf(
-					/* translators: 1: QSOs imported, 2: records in the file, 3: duplicates skipped, 4: records with errors */
-					__( 'Imported %1$s of %2$s QSOs. Duplicates skipped: %3$s. Records with errors: %4$s.', 'wp-logbook' ),
-					number_format_i18n( $summary['imported'] ),
-					number_format_i18n( $summary['records'] ),
-					number_format_i18n( $summary['duplicates'] ),
-					number_format_i18n( $summary['failed'] )
-				)
-			);
-			self::add_notice( $message . self::html_list( $summary['errors'] ), $summary['failed'] ? 'warning' : 'success' );
+		$message = esc_html(
+			sprintf(
+				/* translators: 1: QSOs imported, 2: records in the file, 3: duplicates skipped, 4: records with errors */
+				__( 'Imported %1$s of %2$s QSOs. Duplicates skipped: %3$s. Records with errors: %4$s.', 'wp-logbook' ),
+				number_format_i18n( $summary['imported'] ),
+				number_format_i18n( $summary['records'] ),
+				number_format_i18n( $summary['duplicates'] ),
+				number_format_i18n( $summary['failed'] )
+			)
+		);
+		$where = array();
+		foreach ( $summary['logbooks'] as $id => $count ) {
+			/* translators: 1: logbook title, 2: number of QSOs */
+			$where[] = sprintf( __( '%1$s: %2$s', 'wp-logbook' ), WPLB_Logbooks::title( $id ), number_format_i18n( $count ) );
 		}
+		if ( $where ) {
+			/* translators: %s: list of logbooks with QSO counts */
+			$message .= ' ' . esc_html( sprintf( __( 'Logbooks: %s.', 'wp-logbook' ), implode( ', ', $where ) ) );
+		}
+		self::add_notice( $message . self::html_list( $summary['errors'] ), $summary['failed'] ? 'warning' : 'success' );
 
 		wp_safe_redirect( $redirect );
 		exit;
@@ -803,7 +891,7 @@ class WPLB_Admin {
 		}
 		if ( $summary['skipped'] ) {
 			/* translators: %s: number of QSOs */
-			$parts[] = sprintf( _n( '%s QSO is marked "Not for QRZ.com" and was skipped.', '%s QSOs are marked "Not for QRZ.com" and were skipped.', $summary['skipped'], 'wp-logbook' ), number_format_i18n( $summary['skipped'] ) );
+			$parts[] = sprintf( _n( '%s QSO was skipped: it is marked "Not for QRZ.com" or its logbook is not uploaded.', '%s QSOs were skipped: they are marked "Not for QRZ.com" or their logbook is not uploaded.', $summary['skipped'], 'wp-logbook' ), number_format_i18n( $summary['skipped'] ) );
 		}
 		if ( $summary['stopped'] ) {
 			$parts[] = __( 'Upload stopped:', 'wp-logbook' ) . ' ' . $summary['stop_message'];
@@ -816,7 +904,7 @@ class WPLB_Admin {
 	/**
 	 * Notice for QSOs that could not be deleted from QRZ.com.
 	 */
-	private static function add_remote_delete_notice() {
+	public static function add_remote_delete_notice() {
 		if ( WPLB_QRZ_Sync::$delete_errors ) {
 			self::add_notice( esc_html__( 'Some QSOs could not be deleted from QRZ.com:', 'wp-logbook' ) . self::html_list( WPLB_QRZ_Sync::$delete_errors ), 'warning' );
 		}
@@ -842,7 +930,10 @@ class WPLB_Admin {
 		}
 
 		$key = isset( $_POST['key'] ) ? preg_replace( '/[^A-Za-z0-9-]/', '', sanitize_text_field( wp_unslash( $_POST['key'] ) ) ) : '';
-		$key = '' !== $key ? $key : WPLB_Settings::api_key();
+		if ( '' === $key ) {
+			// The key saved for the logbook being edited, or the default key.
+			$key = isset( $_POST['logbook'] ) && absint( $_POST['logbook'] ) ? WPLB_Logbooks::qrz_key( absint( $_POST['logbook'] ) ) : WPLB_Settings::api_key();
+		}
 		if ( '' === $key ) {
 			wp_send_json_error( array( 'message' => __( 'Enter your QRZ.com Logbook API key first.', 'wp-logbook' ) ) );
 		}
@@ -886,7 +977,11 @@ class WPLB_Admin {
 
 		$warning   = '';
 		$book_call = isset( $response['CALLSIGN'] ) ? strtoupper( $response['CALLSIGN'] ) : '';
-		$station   = WPLB_Settings::get( 'station_callsign' );
+		$station   = isset( $_POST['station'] ) ? WPLB_Fields::normalize_callsign( sanitize_text_field( wp_unslash( $_POST['station'] ) ) ) : '';
+		if ( ! $station ) {
+			// The callsign typed on the Logbooks screen, else the saved one.
+			$station = isset( $_POST['logbook'] ) && absint( $_POST['logbook'] ) ? WPLB_Logbooks::station_callsign( absint( $_POST['logbook'] ) ) : WPLB_Settings::get( 'station_callsign' );
+		}
 		if ( '' !== $book_call && '' !== $station && $book_call !== $station ) {
 			$warning = sprintf(
 				/* translators: 1: logbook callsign, 2: station callsign from the settings */
@@ -922,10 +1017,10 @@ class WPLB_Admin {
 
 		$size = self::batch_size();
 		$ids  = isset( $_POST['ids'] ) ? array_values( array_filter( array_map( 'absint', (array) wp_unslash( $_POST['ids'] ) ) ) ) : array();
-		$ids  = $ids ? array_slice( $ids, 0, $size ) : WPLB_QSOs::ids_with_qrz_status( array( 'pending', 'modified' ), $size );
+		$ids  = $ids ? array_slice( $ids, 0, $size ) : WPLB_QSOs::ids_with_qrz_status( array( 'pending', 'modified' ), $size, WPLB_Logbooks::qrz_logbook_ids() );
 
 		$summary              = WPLB_QRZ_Sync::upload_many( $ids );
-		$counts               = WPLB_QSOs::count_by_qrz_status();
+		$counts               = WPLB_QSOs::count_by_qrz_status( WPLB_Logbooks::qrz_logbook_ids() );
 		$summary['remaining'] = $counts['pending'] + $counts['modified'];
 
 		wp_send_json_success( $summary );

@@ -11,7 +11,7 @@
  */
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'WPLB_VERSION', '1.1.0' );
+define( 'WPLB_VERSION', '1.2.0' );
 define( 'DAY_IN_SECONDS', 86400 );
 
 // Minimal stand-ins for the WordPress functions these classes use.

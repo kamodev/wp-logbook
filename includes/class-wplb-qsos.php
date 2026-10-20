@@ -62,7 +62,7 @@ class WPLB_QSOs {
 	public static function columns() {
 		return array_merge(
 			array_keys( WPLB_Fields::all() ),
-			array( 'qrz_status', 'qrz_logid', 'qrz_upload_date', 'qrz_message', 'created_at', 'updated_at' )
+			array( 'logbook_id', 'qrz_status', 'qrz_logid', 'qrz_upload_date', 'qrz_message', 'created_at', 'updated_at' )
 		);
 	}
 
@@ -77,7 +77,7 @@ class WPLB_QSOs {
 		$formats = array();
 		foreach ( $row as $key => $value ) {
 			$field     = WPLB_Fields::get( $key );
-			$is_int    = 'qrz_logid' === $key || ( $field && 'int' === $field['type'] );
+			$is_int    = in_array( $key, array( 'qrz_logid', 'logbook_id' ), true ) || ( $field && 'int' === $field['type'] );
 			$formats[] = $is_int ? '%d' : '%s';
 		}
 		return array( $row, $formats );
@@ -128,8 +128,11 @@ class WPLB_QSOs {
 	public static function insert( array $data ) {
 		global $wpdb;
 
-		$now                = current_time( 'mysql', true );
-		$data               = wp_parse_args( $data, array( 'qrz_status' => 'pending' ) );
+		$now  = current_time( 'mysql', true );
+		$data = wp_parse_args( $data, array( 'qrz_status' => 'pending' ) );
+		if ( empty( $data['logbook_id'] ) || ! WPLB_Logbooks::get( $data['logbook_id'] ) ) {
+			$data['logbook_id'] = WPLB_Logbooks::default_id();
+		}
 		$data['created_at'] = $now;
 		$data['updated_at'] = $now;
 
@@ -222,6 +225,7 @@ class WPLB_QSOs {
 	 * @param array $args {
 	 *     Optional. Query arguments.
 	 *
+	 *     @type int|int[]    $logbook          One or more logbook IDs.
 	 *     @type string       $search           Text matched against the SEARCHABLE columns.
 	 *     @type string       $callsign         Exact callsign, also matching portable forms such as K1ABC/P.
 	 *     @type string       $band             ADIF band.
@@ -298,6 +302,12 @@ class WPLB_QSOs {
 
 		$where  = array( '1=1' );
 		$params = array();
+
+		if ( ! empty( $args['logbook'] ) ) {
+			$logbooks = array_values( array_map( 'intval', (array) $args['logbook'] ) );
+			$where[]  = 'logbook_id IN (' . implode( ',', array_fill( 0, count( $logbooks ), '%d' ) ) . ')';
+			$params   = array_merge( $params, $logbooks );
+		}
 
 		if ( ! empty( $args['search'] ) ) {
 			$like    = '%' . $wpdb->esc_like( $args['search'] ) . '%';
@@ -403,9 +413,10 @@ class WPLB_QSOs {
 	 * @param string $band     Band.
 	 * @param string $mode     ADIF mode.
 	 * @param int    $exclude  QSO ID to ignore.
+	 * @param int    $logbook  Only look in this logbook (0 for all).
 	 * @return int Matching QSO ID or 0.
 	 */
-	public static function find_duplicate( $callsign, $time_on, $band, $mode, $exclude = 0 ) {
+	public static function find_duplicate( $callsign, $time_on, $band, $mode, $exclude = 0, $logbook = 0 ) {
 		global $wpdb;
 
 		$timestamp = strtotime( $time_on . ' UTC' );
@@ -416,13 +427,15 @@ class WPLB_QSOs {
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT id FROM {$table} WHERE callsign = %s AND band = %s AND mode = %s AND time_on BETWEEN %s AND %s AND id <> %d LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT id FROM {$table} WHERE callsign = %s AND band = %s AND mode = %s AND time_on BETWEEN %s AND %s AND id <> %d AND ( %d = 0 OR logbook_id = %d ) LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$callsign,
 				$band,
 				$mode,
 				gmdate( 'Y-m-d H:i:s', $timestamp - 60 ),
 				gmdate( 'Y-m-d H:i:s', $timestamp + 60 ),
-				$exclude
+				$exclude,
+				$logbook,
+				$logbook
 			)
 		);
 	}
@@ -465,13 +478,21 @@ class WPLB_QSOs {
 	/**
 	 * Number of QSOs in each QRZ upload state.
 	 *
+	 * @param int[]|null $logbooks Only count these logbooks (null for all).
 	 * @return array Status => count.
 	 */
-	public static function count_by_qrz_status() {
+	public static function count_by_qrz_status( $logbooks = null ) {
 		global $wpdb;
 		$table  = self::table();
-		$rows   = $wpdb->get_results( "SELECT qrz_status, COUNT(*) AS total FROM {$table} GROUP BY qrz_status", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
 		$counts = array_fill_keys( array_keys( self::qrz_statuses() ), 0 );
+		if ( is_array( $logbooks ) && ! $logbooks ) {
+			return $counts;
+		}
+		$sql = "SELECT qrz_status, COUNT(*) AS total FROM {$table}";
+		if ( is_array( $logbooks ) ) {
+			$sql = $wpdb->prepare( $sql . ' WHERE logbook_id IN (' . implode( ',', array_fill( 0, count( $logbooks ), '%d' ) ) . ')', array_map( 'intval', $logbooks ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+		$rows = $wpdb->get_results( $sql . ' GROUP BY qrz_status', ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 		foreach ( (array) $rows as $row ) {
 			$counts[ $row['qrz_status'] ] = (int) $row['total'];
 		}
@@ -531,18 +552,48 @@ class WPLB_QSOs {
 	}
 
 	/**
-	 * IDs of QSOs in the given QRZ states, oldest first.
+	 * Put QSOs into another logbook. Use WPLB_Logbooks::move_qsos(), which
+	 * also takes care of their QRZ.com state.
 	 *
-	 * @param string[] $statuses States.
-	 * @param int      $limit    Maximum IDs.
-	 * @return int[]
+	 * @param int[] $ids     QSO IDs.
+	 * @param int   $logbook Logbook ID.
+	 * @return int Rows changed.
 	 */
-	public static function ids_with_qrz_status( array $statuses, $limit = 0 ) {
+	public static function move( array $ids, $logbook ) {
 		global $wpdb;
 
+		$ids = array_values( array_filter( array_map( 'absint', $ids ) ) );
+		if ( ! $ids ) {
+			return 0;
+		}
+		$table = self::table();
+		$sql   = "UPDATE {$table} SET logbook_id = %d WHERE id IN (" . implode( ',', array_fill( 0, count( $ids ), '%d' ) ) . ')';
+
+		return (int) $wpdb->query( $wpdb->prepare( $sql, array_merge( array( (int) $logbook ), $ids ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+	}
+
+	/**
+	 * IDs of QSOs in the given QRZ states, oldest first.
+	 *
+	 * @param string[]   $statuses States.
+	 * @param int        $limit    Maximum IDs.
+	 * @param int[]|null $logbooks Only these logbooks (null for all).
+	 * @return int[]
+	 */
+	public static function ids_with_qrz_status( array $statuses, $limit = 0, $logbooks = null ) {
+		global $wpdb;
+
+		if ( is_array( $logbooks ) && ! $logbooks ) {
+			return array();
+		}
 		$table  = self::table();
-		$sql    = "SELECT id FROM {$table} WHERE qrz_status IN (" . implode( ',', array_fill( 0, count( $statuses ), '%s' ) ) . ') ORDER BY time_on ASC, id ASC';
+		$sql    = "SELECT id FROM {$table} WHERE qrz_status IN (" . implode( ',', array_fill( 0, count( $statuses ), '%s' ) ) . ')';
 		$params = array_values( $statuses );
+		if ( is_array( $logbooks ) ) {
+			$sql   .= ' AND logbook_id IN (' . implode( ',', array_fill( 0, count( $logbooks ), '%d' ) ) . ')';
+			$params = array_merge( $params, array_map( 'intval', $logbooks ) );
+		}
+		$sql .= ' ORDER BY time_on ASC, id ASC';
 		if ( $limit > 0 ) {
 			$sql     .= ' LIMIT %d';
 			$params[] = (int) $limit;

@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: WP Logbook 1.1.0\n"
+"Project-Id-Version: WP Logbook 1.2.0\n"
 "Report-Msgid-Bugs-To: https://github.com/kamodev/wp-logbook/issues\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-20T13:46:39+00:00\n"
+"POT-Creation-Date: 2026-10-20T14:38:20+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: wp-logbook\n"
@@ -26,7 +26,7 @@ msgstr ""
 
 #. Description of the plugin
 #: wp-logbook.php
-msgid "Amateur radio contact (QSO) logbook for WordPress. Log contacts, import/export ADIF, show your log on your site, and optionally upload contacts to your QRZ.com Logbook."
+msgid "Amateur radio contact (QSO) logbook for WordPress. Log contacts in one or more logbooks, import/export ADIF, show your log on your site, and optionally upload contacts to your QRZ.com Logbook."
 msgstr ""
 
 #. Author of the plugin
@@ -36,8 +36,13 @@ msgstr ""
 
 #: admin/class-wplb-admin.php:59
 #: admin/class-wplb-admin.php:60
-#: admin/class-wplb-admin.php:328
-#: admin/class-wplb-admin.php:868
+#: admin/class-wplb-admin.php:350
+#: admin/class-wplb-admin.php:445
+#: admin/class-wplb-admin.php:959
+#: admin/class-wplb-list-table.php:60
+#: admin/class-wplb-qso-form.php:292
+#: includes/class-wplb-fields.php:549
+#: includes/class-wplb-log-view.php:61
 msgid "Logbook"
 msgstr ""
 
@@ -46,491 +51,556 @@ msgid "All QSOs"
 msgstr ""
 
 #: admin/class-wplb-admin.php:62
-#: admin/class-wplb-admin.php:329
-#: admin/class-wplb-qso-form.php:178
+#: admin/class-wplb-admin.php:355
+#: admin/class-wplb-logbooks-screen.php:235
+#: admin/class-wplb-qso-form.php:209
 msgid "Log a QSO"
 msgstr ""
 
 #: admin/class-wplb-admin.php:63
-#: admin/class-wplb-admin.php:405
+#: admin/class-wplb-logbooks-screen.php:188
+msgid "Logbooks"
+msgstr ""
+
+#: admin/class-wplb-admin.php:64
+#: admin/class-wplb-admin.php:435
 msgid "Import / Export"
 msgstr ""
 
-#: admin/class-wplb-admin.php:64
-#: admin/class-wplb-admin.php:471
+#: admin/class-wplb-admin.php:65
+#: admin/class-wplb-admin.php:518
 msgid "Logbook Settings"
 msgstr ""
 
-#: admin/class-wplb-admin.php:64
-#: admin/class-wplb-admin.php:150
+#: admin/class-wplb-admin.php:65
+#: admin/class-wplb-admin.php:152
 msgid "Settings"
 msgstr ""
 
-#: admin/class-wplb-admin.php:122
+#: admin/class-wplb-admin.php:124
 msgid "Delete the selected QSOs? This cannot be undone."
 msgstr ""
 
-#: admin/class-wplb-admin.php:123
+#: admin/class-wplb-admin.php:125
 msgid "Delete this QSO? This cannot be undone."
 msgstr ""
 
-#: admin/class-wplb-admin.php:124
-#: admin/class-wplb-admin.php:275
+#: admin/class-wplb-admin.php:126
+#: admin/class-wplb-admin.php:277
 msgid "Select at least one QSO first."
 msgstr ""
 
 #. translators: 1: QSOs uploaded so far, 2: total QSOs
-#: admin/class-wplb-admin.php:126
+#: admin/class-wplb-admin.php:128
 msgid "Uploading to QRZ.com… %1$s of %2$s"
 msgstr ""
 
 #. translators: 1: number uploaded, 2: number failed
-#: admin/class-wplb-admin.php:128
+#: admin/class-wplb-admin.php:130
 msgid "Finished: %1$s uploaded, %2$s failed."
 msgstr ""
 
-#: admin/class-wplb-admin.php:129
-#: admin/class-wplb-admin.php:809
+#: admin/class-wplb-admin.php:131
+#: admin/class-wplb-admin.php:897
 msgid "Upload stopped:"
 msgstr ""
 
-#: admin/class-wplb-admin.php:130
+#: admin/class-wplb-admin.php:132
 msgid "The request failed. Check your connection and try again."
 msgstr ""
 
-#: admin/class-wplb-admin.php:131
+#: admin/class-wplb-admin.php:133
 msgid "Refresh list"
 msgstr ""
 
-#: admin/class-wplb-admin.php:132
+#: admin/class-wplb-admin.php:134
 msgid "Contacting QRZ.com…"
 msgstr ""
 
-#: admin/class-wplb-admin.php:133
-#: admin/class-wplb-qso-form.php:248
+#: admin/class-wplb-admin.php:135
+#: admin/class-wplb-qso-form.php:280
 msgid "Previous contacts"
 msgstr ""
 
 #. translators: %s: number of earlier contacts
-#: admin/class-wplb-admin.php:135
+#: admin/class-wplb-admin.php:137
 msgid "Worked %s times before."
 msgstr ""
 
-#: admin/class-wplb-admin.php:136
+#: admin/class-wplb-admin.php:138
 msgid "First contact with this station."
 msgstr ""
 
-#: admin/class-wplb-admin.php:137
+#: admin/class-wplb-admin.php:139
 msgid "Details filled in from your last contact."
 msgstr ""
 
 #. translators: %s: QRZ.com log ID
-#: admin/class-wplb-admin.php:220
-#: admin/class-wplb-qso-form.php:401
+#: admin/class-wplb-admin.php:222
+#: admin/class-wplb-qso-form.php:460
 msgid "Log ID %s"
 msgstr ""
 
 #. translators: %s: date and time
-#: admin/class-wplb-admin.php:224
+#: admin/class-wplb-admin.php:226
 msgid "Uploaded %s UTC"
 msgstr ""
 
+#. translators: 1: number of QSOs, 2: logbook title
+#: admin/class-wplb-admin.php:290
+msgid "%1$s QSO moved to %2$s."
+msgid_plural "%1$s QSOs moved to %2$s."
+msgstr[0] ""
+msgstr[1] ""
+
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:294
+#: admin/class-wplb-admin.php:315
 msgid "%s QSO deleted."
 msgid_plural "%s QSOs deleted."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:306
+#: admin/class-wplb-admin.php:327
 msgid "%s QSO queued for upload to QRZ.com."
 msgid_plural "%s QSOs queued for upload to QRZ.com."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:312
+#: admin/class-wplb-admin.php:333
 msgid "%s QSO will not be uploaded to QRZ.com."
 msgid_plural "%s QSOs will not be uploaded to QRZ.com."
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-wplb-admin.php:343
+#: admin/class-wplb-admin.php:369
 msgid "Search QSOs"
 msgstr ""
 
-#: admin/class-wplb-admin.php:358
-msgid "QRZ.com upload is switched on but no API key is saved."
+#: admin/class-wplb-admin.php:384
+msgid "QRZ.com upload is switched on but no logbook can upload: add an API key in the settings, or to a logbook."
 msgstr ""
 
-#: admin/class-wplb-admin.php:360
-msgid "Add your key in the settings."
+#: admin/class-wplb-admin.php:386
+msgid "Open the settings."
 msgstr ""
 
-#: admin/class-wplb-admin.php:369
+#: admin/class-wplb-admin.php:396
 msgid "QRZ.com Logbook:"
 msgstr ""
 
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:372
+#: admin/class-wplb-admin.php:399
 msgid "%s QSO is waiting to be uploaded."
 msgid_plural "%s QSOs are waiting to be uploaded."
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-wplb-admin.php:376
+#: admin/class-wplb-admin.php:403
 msgid "Upload now"
 msgstr ""
 
-#: admin/class-wplb-admin.php:379
+#: admin/class-wplb-admin.php:406
 msgid "Everything is uploaded."
 msgstr ""
 
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:386
+#: admin/class-wplb-admin.php:413
 msgid "%s failed upload"
 msgid_plural "%s failed uploads"
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-wplb-admin.php:388
+#: admin/class-wplb-admin.php:415
 msgid "Retry them"
 msgstr ""
 
-#: admin/class-wplb-admin.php:410
+#: admin/class-wplb-admin.php:440
 msgid "Export"
 msgstr ""
 
-#: admin/class-wplb-admin.php:411
+#: admin/class-wplb-admin.php:441
 msgid "Download your log as ADIF for other logging programs and QSL services, or as CSV for spreadsheets. Leave the filters empty to export everything."
 msgstr ""
 
-#: admin/class-wplb-admin.php:416
+#: admin/class-wplb-admin.php:445
+#: admin/class-wplb-list-table.php:199
+msgid "All logbooks"
+msgstr ""
+
+#. translators: 1: logbook title, 2: number of QSOs
+#: admin/class-wplb-admin.php:448
+msgid "%1$s (%2$s QSOs)"
+msgstr ""
+
+#: admin/class-wplb-admin.php:452
 msgid "From"
 msgstr ""
 
-#: admin/class-wplb-admin.php:417
+#: admin/class-wplb-admin.php:453
 msgid "To"
 msgstr ""
 
-#: admin/class-wplb-admin.php:418
+#: admin/class-wplb-admin.php:454
 #: admin/class-wplb-list-table.php:50
 #: includes/class-wplb-fields.php:97
-#: includes/class-wplb-log-view.php:71
-#: includes/class-wplb-shortcodes.php:89
+#: includes/class-wplb-log-view.php:76
+#: includes/class-wplb-shortcodes.php:95
 msgid "Band"
 msgstr ""
 
-#: admin/class-wplb-admin.php:418
-#: admin/class-wplb-list-table.php:128
-#: includes/class-wplb-log-view.php:573
+#: admin/class-wplb-admin.php:454
+#: admin/class-wplb-list-table.php:159
+#: includes/class-wplb-log-view.php:581
 msgid "All"
 msgstr ""
 
-#: admin/class-wplb-admin.php:424
+#: admin/class-wplb-admin.php:460
 msgid "ADIF (.adi)"
 msgstr ""
 
-#: admin/class-wplb-admin.php:425
+#: admin/class-wplb-admin.php:461
 msgid "CSV"
 msgstr ""
 
-#: admin/class-wplb-admin.php:427
+#: admin/class-wplb-admin.php:463
 msgid "Download"
 msgstr ""
 
-#: admin/class-wplb-admin.php:431
+#: admin/class-wplb-admin.php:467
 msgid "Import ADIF"
 msgstr ""
 
-#: admin/class-wplb-admin.php:432
+#: admin/class-wplb-admin.php:468
 msgid "Add QSOs from an ADIF (.adi) file exported by another logging program, LoTW or QRZ.com."
 msgstr ""
 
-#: admin/class-wplb-admin.php:438
+#: admin/class-wplb-admin.php:474
 msgid "ADIF file"
 msgstr ""
 
 #. translators: %s: maximum upload size
-#: admin/class-wplb-admin.php:440
+#: admin/class-wplb-admin.php:476
 msgid "Maximum size: %s"
 msgstr ""
 
-#: admin/class-wplb-admin.php:442
-msgid "Skip QSOs that are already in the log"
+#: admin/class-wplb-admin.php:478
+msgid "Import into"
 msgstr ""
 
-#: admin/class-wplb-admin.php:444
+#: admin/class-wplb-admin.php:483
+msgid "A new logbook…"
+msgstr ""
+
+#: admin/class-wplb-admin.php:486
+msgid "Title of the new logbook"
+msgstr ""
+
+#: admin/class-wplb-admin.php:488
+msgid "QSOs exported from WP Logbook go back into the logbook named in the file (missing logbooks are created)"
+msgstr ""
+
+#: admin/class-wplb-admin.php:489
+msgid "Skip QSOs that are already in the logbook"
+msgstr ""
+
+#: admin/class-wplb-admin.php:491
 msgid "These QSOs are already in my QRZ.com Logbook (do not upload them again)"
 msgstr ""
 
-#: admin/class-wplb-admin.php:448
+#: admin/class-wplb-admin.php:495
 msgid "Station callsign for QSOs that do not have one"
 msgstr ""
 
-#: admin/class-wplb-admin.php:451
+#: admin/class-wplb-admin.php:496
+msgid "Leave empty to use the station callsign of the logbook (or of the settings)."
+msgstr ""
+
+#: admin/class-wplb-admin.php:498
 msgid "Import"
 msgstr ""
 
-#: admin/class-wplb-admin.php:477
+#: admin/class-wplb-admin.php:524
 #: includes/class-wplb-fields.php:41
 msgid "My station"
 msgstr ""
 
-#: admin/class-wplb-admin.php:478
+#: admin/class-wplb-admin.php:525
 msgid "These details pre-fill every new QSO. The station callsign must match your QRZ.com logbook if you upload there."
 msgstr ""
 
-#: admin/class-wplb-admin.php:494
+#: admin/class-wplb-admin.php:541
 msgid "Public logbook"
 msgstr ""
 
 #. translators: 1: table shortcode, 2: tiles shortcode, 3: statistics shortcode
-#: admin/class-wplb-admin.php:498
+#: admin/class-wplb-admin.php:545
 msgid "Show your log on any page or post as a table with %1$s or as tiles with %2$s, and totals per band and mode with %3$s. These settings are the defaults; shortcode attributes choose the filters, columns and page size per page (see the plugin README)."
 msgstr ""
 
-#: admin/class-wplb-admin.php:505
+#: admin/class-wplb-admin.php:552
 msgid "Columns"
 msgstr ""
 
-#: admin/class-wplb-admin.php:515
+#: admin/class-wplb-admin.php:562
 msgid "Private notes, email addresses and QSL details are never shown publicly."
 msgstr ""
 
-#: admin/class-wplb-admin.php:518
+#: admin/class-wplb-admin.php:565
 msgid "QSOs per page"
 msgstr ""
 
-#: admin/class-wplb-admin.php:522
+#: admin/class-wplb-admin.php:569
 msgid "Callsign search"
 msgstr ""
 
-#: admin/class-wplb-admin.php:522
+#: admin/class-wplb-admin.php:569
 msgid "Include the callsign filter by default, so visitors can check whether they are in the log"
 msgstr ""
 
-#: admin/class-wplb-admin.php:526
+#: admin/class-wplb-admin.php:573
 msgid "QRZ.com Logbook (optional)"
 msgstr ""
 
-#: admin/class-wplb-admin.php:527
+#: admin/class-wplb-admin.php:574
 msgid "Upload your QSOs to your QRZ.com Logbook through the QRZ.com Logbook API. Your log works the same with this switched off."
 msgstr ""
 
-#: admin/class-wplb-admin.php:528
+#: admin/class-wplb-admin.php:575
 msgid "Find the API key on QRZ.com under Logbook → Settings for the logbook you want to upload to. QRZ.com may require a paid subscription for API uploads."
 msgstr ""
 
-#: admin/class-wplb-admin.php:530
+#. translators: %s: link to the Logbooks screen
+#: admin/class-wplb-admin.php:579
+msgid "The key below is the default. A logbook that uploads to a different QRZ.com logbook (another callsign) can have its own key, and upload can be switched off per logbook, under %s."
+msgstr ""
+
+#: admin/class-wplb-admin.php:580
+msgid "Logbook → Logbooks"
+msgstr ""
+
+#: admin/class-wplb-admin.php:584
 msgid "QRZ.com upload"
 msgstr ""
 
-#: admin/class-wplb-admin.php:530
+#: admin/class-wplb-admin.php:584
 msgid "Upload QSOs to my QRZ.com Logbook"
 msgstr ""
 
-#: admin/class-wplb-admin.php:532
-msgid "API key"
+#: admin/class-wplb-admin.php:586
+#: admin/class-wplb-logbooks-screen.php:294
+msgid "Default API key"
 msgstr ""
 
 #. translators: %s: masked API key
-#: admin/class-wplb-admin.php:535
+#: admin/class-wplb-admin.php:589
 msgid "Set by WPLB_QRZ_API_KEY in wp-config.php (%s)."
 msgstr ""
 
-#: admin/class-wplb-admin.php:543
+#: admin/class-wplb-admin.php:597
 msgid "A key is saved. Leave the field empty to keep it."
 msgstr ""
 
-#: admin/class-wplb-admin.php:544
+#: admin/class-wplb-admin.php:598
 msgid "Remove the saved key"
 msgstr ""
 
-#: admin/class-wplb-admin.php:549
+#: admin/class-wplb-admin.php:603
+#: admin/class-wplb-logbooks-screen.php:493
 msgid "Test connection"
 msgstr ""
 
-#: admin/class-wplb-admin.php:553
+#: admin/class-wplb-admin.php:607
 msgid "Upload on save"
 msgstr ""
 
-#: admin/class-wplb-admin.php:553
+#: admin/class-wplb-admin.php:607
 msgid "Upload each QSO as soon as it is logged or edited"
 msgstr ""
 
-#: admin/class-wplb-admin.php:554
+#: admin/class-wplb-admin.php:608
 msgid "Background upload"
 msgstr ""
 
-#: admin/class-wplb-admin.php:554
+#: admin/class-wplb-admin.php:608
 msgid "Every hour, upload QSOs that are still waiting (uses WP-Cron)"
 msgstr ""
 
-#: admin/class-wplb-admin.php:555
+#: admin/class-wplb-admin.php:609
 msgid "Edits"
 msgstr ""
 
-#: admin/class-wplb-admin.php:555
+#: admin/class-wplb-admin.php:609
 msgid "When an uploaded QSO is edited, replace the copy on QRZ.com"
 msgstr ""
 
-#: admin/class-wplb-admin.php:556
+#: admin/class-wplb-admin.php:610
 msgid "Deletions"
 msgstr ""
 
-#: admin/class-wplb-admin.php:556
+#: admin/class-wplb-admin.php:610
 msgid "When a QSO is deleted here, delete it from QRZ.com too"
 msgstr ""
 
-#: admin/class-wplb-admin.php:560
+#: admin/class-wplb-admin.php:614
 msgid "Data"
 msgstr ""
 
-#: admin/class-wplb-admin.php:562
+#: admin/class-wplb-admin.php:616
 msgid "Uninstall"
 msgstr ""
 
-#: admin/class-wplb-admin.php:562
+#: admin/class-wplb-admin.php:616
 msgid "Delete all QSOs and settings when the plugin is deleted"
 msgstr ""
 
-#: admin/class-wplb-admin.php:593
+#: admin/class-wplb-admin.php:647
 msgid "You are not allowed to export the logbook."
 msgstr ""
 
-#: admin/class-wplb-admin.php:680
+#: admin/class-wplb-admin.php:741
 msgid "You are not allowed to import QSOs."
 msgstr ""
 
-#: admin/class-wplb-admin.php:688
+#: admin/class-wplb-admin.php:749
 msgid "The file could not be uploaded. Check that it is not larger than the maximum upload size."
 msgstr ""
 
-#: admin/class-wplb-admin.php:710
+#: admin/class-wplb-admin.php:762
 msgid "No QSO records were found in that file. Is it an ADIF (.adi) file?"
 msgstr ""
 
 #. translators: 1: QSOs imported, 2: records in the file, 3: duplicates skipped, 4: records with errors
-#: admin/class-wplb-admin.php:715
+#: admin/class-wplb-admin.php:795
 msgid "Imported %1$s of %2$s QSOs. Duplicates skipped: %3$s. Records with errors: %4$s."
 msgstr ""
 
-#: admin/class-wplb-admin.php:736
+#. translators: 1: logbook title, 2: number of QSOs
+#: admin/class-wplb-admin.php:805
+msgid "%1$s: %2$s"
+msgstr ""
+
+#. translators: %s: list of logbooks with QSO counts
+#: admin/class-wplb-admin.php:809
+msgid "Logbooks: %s."
+msgstr ""
+
+#: admin/class-wplb-admin.php:824
 msgid "You are not allowed to delete QSOs."
 msgstr ""
 
 #. translators: %s: callsign
-#: admin/class-wplb-admin.php:742
+#: admin/class-wplb-admin.php:830
 msgid "QSO with %s deleted."
 msgstr ""
 
-#: admin/class-wplb-admin.php:757
-#: admin/class-wplb-admin.php:773
+#: admin/class-wplb-admin.php:845
+#: admin/class-wplb-admin.php:861
 msgid "You are not allowed to upload QSOs."
 msgstr ""
 
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:778
+#: admin/class-wplb-admin.php:866
 msgid "%s QSO queued again. Use \"Upload now\" to send it."
 msgid_plural "%s QSOs queued again. Use \"Upload now\" to send them."
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-wplb-admin.php:791
-#: admin/class-wplb-admin.php:920
+#: admin/class-wplb-admin.php:879
+#: admin/class-wplb-admin.php:1015
 msgid "QRZ.com upload is not set up. Switch it on and add your API key in the Logbook settings."
 msgstr ""
 
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:798
+#: admin/class-wplb-admin.php:886
 msgid "%s QSO uploaded to QRZ.com."
 msgid_plural "%s QSOs uploaded to QRZ.com."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:802
+#: admin/class-wplb-admin.php:890
 msgid "%s QSO was rejected by QRZ.com."
 msgid_plural "%s QSOs were rejected by QRZ.com."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of QSOs
-#: admin/class-wplb-admin.php:806
-msgid "%s QSO is marked \"Not for QRZ.com\" and was skipped."
-msgid_plural "%s QSOs are marked \"Not for QRZ.com\" and were skipped."
+#: admin/class-wplb-admin.php:894
+msgid "%s QSO was skipped: it is marked \"Not for QRZ.com\" or its logbook is not uploaded."
+msgid_plural "%s QSOs were skipped: they are marked \"Not for QRZ.com\" or their logbook is not uploaded."
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-wplb-admin.php:821
+#: admin/class-wplb-admin.php:909
 msgid "Some QSOs could not be deleted from QRZ.com:"
 msgstr ""
 
-#: admin/class-wplb-admin.php:841
-#: admin/class-wplb-admin.php:917
-#: admin/class-wplb-admin.php:957
+#: admin/class-wplb-admin.php:929
+#: admin/class-wplb-admin.php:1012
+#: admin/class-wplb-admin.php:1052
 msgid "You are not allowed to do that."
 msgstr ""
 
-#: admin/class-wplb-admin.php:847
+#: admin/class-wplb-admin.php:938
 msgid "Enter your QRZ.com Logbook API key first."
 msgstr ""
 
-#: admin/class-wplb-admin.php:858
+#: admin/class-wplb-admin.php:949
 msgid "QRZ.com refused the key (RESULT=AUTH). Check that you copied the key of the right logbook; API access may require a QRZ.com subscription."
 msgstr ""
 
 #. translators: %s: RESULT value returned by QRZ.com
-#: admin/class-wplb-admin.php:860
-#: includes/class-wplb-qrz-sync.php:193
+#: admin/class-wplb-admin.php:951
+#: includes/class-wplb-qrz-sync.php:200
 msgid "QRZ.com answered RESULT=%s."
 msgstr ""
 
-#: admin/class-wplb-admin.php:869
+#: admin/class-wplb-admin.php:960
 #: admin/class-wplb-list-table.php:49
 #: includes/class-wplb-fields.php:94
-#: includes/class-wplb-log-view.php:65
+#: includes/class-wplb-log-view.php:70
 msgid "Callsign"
 msgstr ""
 
-#: admin/class-wplb-admin.php:870
+#: admin/class-wplb-admin.php:961
 msgid "Owner"
 msgstr ""
 
-#: admin/class-wplb-admin.php:871
-#: includes/class-wplb-shortcodes.php:63
-#: includes/class-wplb-shortcodes.php:96
+#: admin/class-wplb-admin.php:962
+#: admin/class-wplb-logbooks-screen.php:208
+#: includes/class-wplb-shortcodes.php:69
+#: includes/class-wplb-shortcodes.php:102
 msgid "QSOs"
 msgstr ""
 
-#: admin/class-wplb-admin.php:872
+#: admin/class-wplb-admin.php:963
 #: includes/class-wplb-fields.php:548
-#: includes/class-wplb-log-view.php:642
+#: includes/class-wplb-log-view.php:650
 msgid "Confirmed"
 msgstr ""
 
-#: admin/class-wplb-admin.php:873
-#: includes/class-wplb-shortcodes.php:67
+#: admin/class-wplb-admin.php:964
+#: includes/class-wplb-shortcodes.php:73
 msgid "DXCC entities"
 msgstr ""
 
-#: admin/class-wplb-admin.php:874
-#: includes/class-wplb-shortcodes.php:78
+#: admin/class-wplb-admin.php:965
+#: includes/class-wplb-shortcodes.php:84
 msgid "First QSO"
 msgstr ""
 
-#: admin/class-wplb-admin.php:875
+#: admin/class-wplb-admin.php:966
 msgid "Last QSO"
 msgstr ""
 
 #. translators: 1: logbook callsign, 2: station callsign from the settings
-#: admin/class-wplb-admin.php:893
+#: admin/class-wplb-admin.php:988
 msgid "This QRZ.com logbook is for %1$s but your station callsign is %2$s. QRZ.com rejects QSOs whose station callsign does not match the logbook."
 msgstr ""
 
-#: admin/class-wplb-admin.php:901
+#: admin/class-wplb-admin.php:996
 msgid "Connected to QRZ.com."
 msgstr ""
 
@@ -545,8 +615,8 @@ msgstr ""
 
 #: admin/class-wplb-list-table.php:52
 #: includes/class-wplb-fields.php:99
-#: includes/class-wplb-log-view.php:76
-#: includes/class-wplb-shortcodes.php:90
+#: includes/class-wplb-log-view.php:81
+#: includes/class-wplb-shortcodes.php:96
 msgid "Mode"
 msgstr ""
 
@@ -569,183 +639,459 @@ msgstr ""
 
 #: admin/class-wplb-list-table.php:57
 #: includes/class-wplb-fields.php:43
-#: includes/class-wplb-log-view.php:172
+#: includes/class-wplb-log-view.php:177
 msgid "QSL"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:60
+#: admin/class-wplb-list-table.php:63
+#: admin/class-wplb-logbooks-screen.php:209
+#: admin/class-wplb-logbooks-screen.php:476
 msgid "QRZ.com"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:99
+#: admin/class-wplb-list-table.php:121
 msgid "Export to ADIF"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:100
-#: admin/class-wplb-list-table.php:244
-#: admin/class-wplb-qso-form.php:237
+#: admin/class-wplb-list-table.php:122
+#: admin/class-wplb-list-table.php:286
+#: admin/class-wplb-logbooks-screen.php:239
+#: admin/class-wplb-logbooks-screen.php:321
+#: admin/class-wplb-qso-form.php:269
 msgid "Delete"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:103
+#: admin/class-wplb-list-table.php:125
 msgid "Upload to QRZ.com now"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:104
+#: admin/class-wplb-list-table.php:126
 msgid "Queue for QRZ.com upload"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:105
+#: admin/class-wplb-list-table.php:127
 msgid "Do not upload to QRZ.com"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:165
+#: admin/class-wplb-list-table.php:135
+msgid "Move to logbook"
+msgstr ""
+
+#: admin/class-wplb-list-table.php:198
+msgid "Filter by logbook"
+msgstr ""
+
+#. translators: 1: logbook title, 2: number of QSOs
+#: admin/class-wplb-list-table.php:202
+msgid "%1$s (%2$s)"
+msgstr ""
+
+#: admin/class-wplb-list-table.php:206
 msgid "Filter by band"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:166
+#: admin/class-wplb-list-table.php:207
 msgid "All bands"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:171
+#: admin/class-wplb-list-table.php:212
 msgid "Filter by mode"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:172
+#: admin/class-wplb-list-table.php:213
 msgid "All modes"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:177
+#: admin/class-wplb-list-table.php:218
 msgid "Filter"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:212
+#: admin/class-wplb-list-table.php:254
 msgid "No QSOs found."
 msgstr ""
 
 #. translators: %s: callsign
-#: admin/class-wplb-list-table.php:226
+#: admin/class-wplb-list-table.php:268
 msgid "Select QSO with %s"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:240
+#: admin/class-wplb-list-table.php:282
+#: admin/class-wplb-logbooks-screen.php:233
 msgid "Edit"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:251
+#: admin/class-wplb-list-table.php:293
 msgid "Re-upload"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:251
+#: admin/class-wplb-list-table.php:293
 msgid "Upload"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:304
+#: admin/class-wplb-list-table.php:353
 msgid "QSL card"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:305
+#: admin/class-wplb-list-table.php:354
 msgid "LoTW"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:306
+#: admin/class-wplb-list-table.php:355
 msgid "eQSL"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:315
+#: admin/class-wplb-list-table.php:364
 msgid "confirmed"
 msgstr ""
 
-#: admin/class-wplb-list-table.php:315
+#: admin/class-wplb-list-table.php:364
 msgid "sent"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:45
+#: admin/class-wplb-logbooks-screen.php:60
+msgid "You are not allowed to manage logbooks."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:74
+msgid "That logbook does not exist. It may have been deleted."
+msgstr ""
+
+#. translators: %s: logbook title
+#: admin/class-wplb-logbooks-screen.php:105
+msgid "Logbook \"%s\" updated."
+msgstr ""
+
+#. translators: %s: logbook title
+#: admin/class-wplb-logbooks-screen.php:107
+msgid "Logbook \"%s\" added."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:134
+#: includes/class-wplb-logbooks.php:329
+msgid "Choose another logbook for the QSOs."
+msgstr ""
+
+#. translators: %s: logbook title
+#: admin/class-wplb-logbooks-screen.php:145
+msgid "Logbook \"%s\" deleted."
+msgstr ""
+
+#. translators: 1: number of QSOs, 2: logbook title
+#: admin/class-wplb-logbooks-screen.php:148
+msgid "Its %1$s QSO was moved to \"%2$s\"."
+msgid_plural "Its %1$s QSOs were moved to \"%2$s\"."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of QSOs
+#: admin/class-wplb-logbooks-screen.php:151
+msgid "Its %s QSO was deleted."
+msgid_plural "Its %s QSOs were deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-wplb-logbooks-screen.php:191
+msgid "Keep separate logs, for example for your home station, portable or POTA activations, contests or a second callsign. Every QSO is in one logbook. Logging, import, export and the public shortcodes can each work with one logbook or all of them."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:196
+msgid "Add a logbook"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:200
+msgid "Add logbook"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:205
+#: admin/class-wplb-logbooks-screen.php:427
+msgid "Title"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:206
+msgid "Shortcode attribute"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:207
+#: admin/class-wplb-logbooks-screen.php:442
+#: includes/class-wplb-fields.php:133
+#: includes/class-wplb-log-view.php:171
+msgid "Station callsign"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:227
+#: admin/class-wplb-logbooks-screen.php:458
+#: admin/class-wplb-logbooks-screen.php:463
+msgid "Default"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:234
+#: admin/class-wplb-logbooks-screen.php:306
+msgid "View QSOs"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:236
+msgid "Export ADIF"
+msgstr ""
+
+#. translators: %s: station callsign from the settings
+#: admin/class-wplb-logbooks-screen.php:256
+msgid "%s (settings)"
+msgstr ""
+
+#. translators: %s: link to the settings
+#: admin/class-wplb-logbooks-screen.php:272
+msgid "QRZ.com upload is switched off in the %s, so no logbook is uploaded at the moment."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:273
+msgid "settings"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:288
+#: includes/class-wplb-qsos.php:49
+msgid "Not uploaded"
+msgstr ""
+
+#. translators: %s: masked API key
+#: admin/class-wplb-logbooks-screen.php:292
+msgid "Own API key (%s)"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:294
+msgid "No API key yet"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:305
+msgid "Edit logbook"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:318
+msgid "Update logbook"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:319
+#: admin/class-wplb-logbooks-screen.php:382
+#: admin/class-wplb-qso-form.php:264
+msgid "Cancel"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:338
+#: admin/class-wplb-logbooks-screen.php:381
+msgid "Delete logbook"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:342
+#: includes/class-wplb-logbooks.php:326
+msgid "The last logbook cannot be deleted."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:343
+msgid "Back to logbooks"
+msgstr ""
+
+#. translators: %s: logbook title
+#: admin/class-wplb-logbooks-screen.php:352
+msgid "You are about to delete the logbook %s."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:354
+msgid "It is the default logbook. The logbook that receives its QSOs becomes the default."
+msgstr ""
+
+#. translators: %s: number of QSOs
+#: admin/class-wplb-logbooks-screen.php:361
+msgid "What should happen to its %s QSO?"
+msgid_plural "What should happen to its %s QSOs?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-wplb-logbooks-screen.php:363
+msgid "Move them to"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:364
+msgid "Logbook that receives the QSOs"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:369
+msgid "Delete them"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:371
+msgid "Deleted QSOs cannot be restored. Export the logbook first if you may need them again."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:373
+msgid "QSOs that were uploaded are deleted from QRZ.com too, as set in the settings."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:377
+msgid "It has no QSOs."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:393
+msgid "The logbook was not saved:"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:429
+msgid "Shown in the admin and in the logbook filter of public pages."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:434
+msgid "Slug"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:436
+msgid "Picks the logbook in shortcodes, for example [wp_logbook logbook=\"pota\"], and names export files. Leave empty to make one from the title."
+msgstr ""
+
+#. translators: %s: station callsign from the settings
+#: admin/class-wplb-logbooks-screen.php:446
+msgid "Pre-filled on new QSOs in this logbook. Leave empty to use the callsign from the settings (%s)."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:447
+msgid "Pre-filled on new QSOs in this logbook. Leave empty to use the callsign from the settings."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:452
+msgid "Description"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:454
+msgid "Notes for yourself. Not shown on the site."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:458
+msgid "This is the default logbook."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:464
+msgid "Make this the default logbook"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:465
+msgid "New QSOs and imports go to the default logbook unless you choose another."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:477
+msgid "Upload the QSOs of this logbook to QRZ.com"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:478
+msgid "Uploads also need QRZ.com upload switched on in the settings."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:484
+msgid "Use the default key"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:487
+msgid "A key is saved for this logbook. Leave the field empty to keep it."
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:488
+msgid "Remove the key and use the default key"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:498
+msgid "QRZ.com API key"
+msgstr ""
+
+#: admin/class-wplb-logbooks-screen.php:500
+msgid "Only needed when this logbook goes to another QRZ.com logbook than the default key in the settings. QRZ.com keeps a separate logbook, with its own key, for each callsign."
+msgstr ""
+
+#: admin/class-wplb-qso-form.php:57
 msgid "That QSO does not exist. It may have been deleted."
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:60
+#: admin/class-wplb-qso-form.php:78
 msgid "You are not allowed to edit the logbook."
 msgstr ""
 
 #. translators: %s: callsign
-#: admin/class-wplb-qso-form.php:101
+#: admin/class-wplb-qso-form.php:130
 msgid "QSO with %s updated."
 msgstr ""
 
 #. translators: %s: callsign
-#: admin/class-wplb-qso-form.php:101
+#: admin/class-wplb-qso-form.php:130
 msgid "QSO with %s logged."
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:104
+#: admin/class-wplb-qso-form.php:133
 msgid "Note: the log already had a QSO with this station on the same band and mode within a minute."
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:110
+#: admin/class-wplb-qso-form.php:139
 msgid "Uploaded to QRZ.com."
 msgstr ""
 
 #. translators: %s: error message
-#: admin/class-wplb-qso-form.php:113
+#: admin/class-wplb-qso-form.php:142
 msgid "QRZ.com upload failed: %s"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:178
+#: admin/class-wplb-qso-form.php:209
 msgid "Edit QSO"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:180
+#: admin/class-wplb-qso-form.php:211
 msgid "Log another QSO"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:186
+#: admin/class-wplb-qso-form.php:217
 msgid "The QSO was not saved:"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:231
+#: admin/class-wplb-qso-form.php:263
 msgid "Update QSO"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:232
-msgid "Cancel"
-msgstr ""
-
-#: admin/class-wplb-qso-form.php:241
+#: admin/class-wplb-qso-form.php:273
 msgid "Save & log another"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:243
+#: admin/class-wplb-qso-form.php:275
 msgid "Save"
 msgstr ""
 
+#: admin/class-wplb-qso-form.php:304
+msgid "Manage logbooks"
+msgstr ""
+
+#: admin/class-wplb-qso-form.php:306
+msgid "Moving a QSO to a logbook with a different QRZ.com API key uploads it again to that QRZ.com logbook."
+msgstr ""
+
 #. translators: %s: field label
-#: admin/class-wplb-qso-form.php:282
+#: admin/class-wplb-qso-form.php:341
 msgid "%s, time"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:285
+#: admin/class-wplb-qso-form.php:344
 msgid "Now"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:365
+#: admin/class-wplb-qso-form.php:424
 msgid "Common modes"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:374
+#: admin/class-wplb-qso-form.php:433
 msgid "All ADIF modes"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:396
+#: admin/class-wplb-qso-form.php:455
 msgid "QRZ.com Logbook"
 msgstr ""
 
 #. translators: %s: date and time
-#: admin/class-wplb-qso-form.php:405
+#: admin/class-wplb-qso-form.php:464
 msgid "uploaded %s UTC"
 msgstr ""
 
-#: admin/class-wplb-qso-form.php:415
+#: admin/class-wplb-qso-form.php:474
 msgid "Do not upload this QSO to QRZ.com"
 msgstr ""
 
@@ -798,12 +1144,12 @@ msgid "QTH"
 msgstr ""
 
 #: includes/class-wplb-fields.php:105
-#: includes/class-wplb-log-view.php:81
+#: includes/class-wplb-log-view.php:86
 msgid "Grid square"
 msgstr ""
 
 #: includes/class-wplb-fields.php:106
-#: includes/class-wplb-log-view.php:100
+#: includes/class-wplb-log-view.php:105
 msgid "Country"
 msgstr ""
 
@@ -812,12 +1158,12 @@ msgid "Comment"
 msgstr ""
 
 #: includes/class-wplb-fields.php:110
-#: includes/class-wplb-log-view.php:88
+#: includes/class-wplb-log-view.php:93
 msgid "State / province"
 msgstr ""
 
 #: includes/class-wplb-fields.php:111
-#: includes/class-wplb-log-view.php:94
+#: includes/class-wplb-log-view.php:99
 msgid "County"
 msgstr ""
 
@@ -826,7 +1172,7 @@ msgid "DXCC entity code"
 msgstr ""
 
 #: includes/class-wplb-fields.php:113
-#: includes/class-wplb-log-view.php:106
+#: includes/class-wplb-log-view.php:111
 msgid "Continent"
 msgstr ""
 
@@ -839,7 +1185,7 @@ msgid "ITU zone"
 msgstr ""
 
 #: includes/class-wplb-fields.php:116
-#: includes/class-wplb-log-view.php:133
+#: includes/class-wplb-log-view.php:138
 msgid "IOTA"
 msgstr ""
 
@@ -860,7 +1206,7 @@ msgid "POTA reference(s)"
 msgstr ""
 
 #: includes/class-wplb-fields.php:123
-#: includes/class-wplb-log-view.php:126
+#: includes/class-wplb-log-view.php:131
 msgid "WWFF reference"
 msgstr ""
 
@@ -890,11 +1236,6 @@ msgstr ""
 
 #: includes/class-wplb-fields.php:130
 msgid "Exchange received"
-msgstr ""
-
-#: includes/class-wplb-fields.php:133
-#: includes/class-wplb-log-view.php:166
-msgid "Station callsign"
 msgstr ""
 
 #: includes/class-wplb-fields.php:134
@@ -1150,7 +1491,7 @@ msgid "Rain scatter"
 msgstr ""
 
 #: includes/class-wplb-fields.php:487
-#: includes/class-wplb-log-view.php:160
+#: includes/class-wplb-log-view.php:165
 msgid "Satellite"
 msgstr ""
 
@@ -1199,198 +1540,225 @@ msgid "Electronic"
 msgstr ""
 
 #. translators: %s: field label
-#: includes/class-wplb-fields.php:669
+#: includes/class-wplb-fields.php:670
 msgid "%s is not a valid callsign."
 msgstr ""
 
 #. translators: %s: field label
-#: includes/class-wplb-fields.php:683
+#: includes/class-wplb-fields.php:684
 msgid "%s is not a valid date and time."
 msgstr ""
 
 #. translators: %s: field label
-#: includes/class-wplb-fields.php:697
+#: includes/class-wplb-fields.php:698
 msgid "%s is not a valid date."
 msgstr ""
 
 #. translators: 1: field label, 2: minimum, 3: maximum
-#: includes/class-wplb-fields.php:711
+#: includes/class-wplb-fields.php:712
 msgid "%1$s must be a whole number from %2$d to %3$d."
 msgstr ""
 
 #. translators: %s: field label
-#: includes/class-wplb-fields.php:725
+#: includes/class-wplb-fields.php:726
 msgid "%s must be a positive number."
 msgstr ""
 
 #. translators: %s: band entered by the user
-#: includes/class-wplb-fields.php:735
+#: includes/class-wplb-fields.php:736
 msgid "\"%s\" is not an ADIF band."
 msgstr ""
 
 #. translators: %s: mode entered by the user
-#: includes/class-wplb-fields.php:745
+#: includes/class-wplb-fields.php:746
 msgid "\"%s\" is not a valid mode."
 msgstr ""
 
 #. translators: %s: field label
-#: includes/class-wplb-fields.php:764
+#: includes/class-wplb-fields.php:765
 msgid "%s must be a Maidenhead locator such as FN31 or FN31pr."
 msgstr ""
 
 #. translators: 1: frequency in MHz, 2: band
-#: includes/class-wplb-fields.php:806
+#: includes/class-wplb-fields.php:807
 msgid "%1$s MHz is not in the %2$s band."
 msgstr ""
 
-#: includes/class-wplb-fields.php:817
+#: includes/class-wplb-fields.php:818
 msgid "Enter the callsign of the station you worked."
 msgstr ""
 
-#: includes/class-wplb-fields.php:820
+#: includes/class-wplb-fields.php:821
 msgid "Enter the date and time (UTC) the contact started."
 msgstr ""
 
-#: includes/class-wplb-fields.php:823
+#: includes/class-wplb-fields.php:824
 msgid "Choose a mode."
 msgstr ""
 
-#: includes/class-wplb-fields.php:826
+#: includes/class-wplb-fields.php:827
 msgid "Choose a band or enter a frequency."
 msgstr ""
 
-#: includes/class-wplb-fields.php:828
+#: includes/class-wplb-fields.php:829
 msgid "That frequency is outside every amateur band; choose the band as well."
 msgstr ""
 
-#: includes/class-wplb-fields.php:831
+#: includes/class-wplb-fields.php:832
 msgid "The end time is before the start time."
 msgstr ""
 
 #. translators: 1: record number, 2: callsign, 3: error messages
-#: includes/class-wplb-import.php:70
+#: includes/class-wplb-import.php:91
 msgid "Record %1$d (%2$s): %3$s"
 msgstr ""
 
 #. translators: 1: record number, 2: error message
-#: includes/class-wplb-import.php:96
+#: includes/class-wplb-import.php:117
 msgid "Record %1$d: %2$s"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:61
+#: includes/class-wplb-log-view.php:66
 msgid "Date (UTC)"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:112
+#: includes/class-wplb-log-view.php:117
 msgid "POTA park"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:119
+#: includes/class-wplb-log-view.php:124
 msgid "SOTA summit"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:140
+#: includes/class-wplb-log-view.php:145
 msgid "My POTA park"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:147
+#: includes/class-wplb-log-view.php:152
 msgid "My SOTA summit"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:154
+#: includes/class-wplb-log-view.php:159
 msgid "Contest"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:322
+#: includes/class-wplb-log-view.php:327
 msgid "No contacts match these filters."
 msgstr ""
 
-#: includes/class-wplb-log-view.php:324
+#: includes/class-wplb-log-view.php:329
 msgid "No contacts logged yet."
 msgstr ""
 
-#: includes/class-wplb-log-view.php:535
+#: includes/class-wplb-log-view.php:543
 msgid "Filter contacts"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:535
+#: includes/class-wplb-log-view.php:543
 msgid "Display"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:544
+#: includes/class-wplb-log-view.php:552
 msgid "From (UTC)"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:545
+#: includes/class-wplb-log-view.php:553
 msgid "To (UTC)"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:609
+#: includes/class-wplb-log-view.php:617
 msgid "Per page"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:618
+#: includes/class-wplb-log-view.php:626
 msgid "Apply filters"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:618
+#: includes/class-wplb-log-view.php:626
 msgid "Show"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:620
+#: includes/class-wplb-log-view.php:628
 msgid "Clear filters"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:643
+#: includes/class-wplb-log-view.php:651
 msgid "Not confirmed"
 msgstr ""
 
 #. translators: %s: number of contacts
-#: includes/class-wplb-log-view.php:669
+#: includes/class-wplb-log-view.php:687
 msgid "%s contact"
 msgid_plural "%s contacts"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: 1: first contact shown, 2: last contact shown, 3: number of contacts
-#: includes/class-wplb-log-view.php:672
+#: includes/class-wplb-log-view.php:690
 msgid "Showing %1$s–%2$s of %3$s contacts"
 msgstr ""
 
 #. translators: 1: contacts shown, 2: number of contacts
-#: includes/class-wplb-log-view.php:675
+#: includes/class-wplb-log-view.php:693
 msgid "Showing the latest %1$s of %2$s contacts"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:722
+#: includes/class-wplb-log-view.php:740
 msgid "✓ Confirmed"
 msgstr ""
 
 #. translators: %s: date and time
-#: includes/class-wplb-log-view.php:732
+#: includes/class-wplb-log-view.php:750
 msgid "%s UTC"
 msgstr ""
 
 #. translators: %s: frequency in MHz
-#: includes/class-wplb-log-view.php:741
+#: includes/class-wplb-log-view.php:759
 msgid "%s MHz"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:816
+#: includes/class-wplb-log-view.php:836
 msgid "Logbook pages"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:818
+#: includes/class-wplb-log-view.php:838
 msgid "« Newer"
 msgstr ""
 
 #. translators: %s: page number
-#: includes/class-wplb-log-view.php:835
+#: includes/class-wplb-log-view.php:855
 msgid "Page %s"
 msgstr ""
 
-#: includes/class-wplb-log-view.php:843
+#: includes/class-wplb-log-view.php:863
 msgid "Older »"
+msgstr ""
+
+#: includes/class-wplb-logbooks.php:141
+msgid "My logbook"
+msgstr ""
+
+#: includes/class-wplb-logbooks.php:193
+msgid "Give the logbook a title."
+msgstr ""
+
+#. translators: %s: logbook title
+#: includes/class-wplb-logbooks.php:198
+msgid "There is already a logbook called \"%s\"."
+msgstr ""
+
+#: includes/class-wplb-logbooks.php:211
+msgid "The station callsign is not a valid callsign."
+msgstr ""
+
+#: includes/class-wplb-logbooks.php:268
+#: includes/class-wplb-logbooks.php:304
+msgid "The logbook could not be saved."
+msgstr ""
+
+#: includes/class-wplb-logbooks.php:295
+#: includes/class-wplb-logbooks.php:323
+msgid "That logbook does not exist."
 msgstr ""
 
 #: includes/class-wplb-qrz-client.php:88
@@ -1411,39 +1779,40 @@ msgstr ""
 msgid "QRZ.com sent a response this plugin does not understand."
 msgstr ""
 
-#: includes/class-wplb-qrz-sync.php:120
+#: includes/class-wplb-qrz-sync.php:121
 msgid "QSO not found."
 msgstr ""
 
-#: includes/class-wplb-qrz-sync.php:123
+#. translators: %s: logbook title
+#: includes/class-wplb-qrz-sync.php:126
+msgid "The logbook \"%s\" is not uploaded to QRZ.com."
+msgstr ""
+
+#: includes/class-wplb-qrz-sync.php:129
 msgid "This QSO is marked \"Not for QRZ.com\"."
 msgstr ""
 
 #. translators: %d: QRZ.com log ID
-#: includes/class-wplb-qrz-sync.php:152
+#: includes/class-wplb-qrz-sync.php:159
 msgid "Uploaded, but the previous copy on QRZ.com (log ID %d) could not be removed."
 msgstr ""
 
-#: includes/class-wplb-qrz-sync.php:169
+#: includes/class-wplb-qrz-sync.php:176
 msgid "QRZ.com refused the API key (RESULT=AUTH). Check the key in the Logbook settings; uploading through the API may require a QRZ.com subscription."
 msgstr ""
 
-#: includes/class-wplb-qrz-sync.php:174
+#: includes/class-wplb-qrz-sync.php:181
 msgid "Already in the QRZ.com logbook."
 msgstr ""
 
 #. translators: %s: reason given by QRZ.com
-#: includes/class-wplb-qrz-sync.php:189
+#: includes/class-wplb-qrz-sync.php:196
 msgid "QRZ.com rejected the request: %s"
 msgstr ""
 
 #. translators: 1: comma separated log IDs, 2: reason
-#: includes/class-wplb-qrz-sync.php:307
+#: includes/class-wplb-qrz-sync.php:329
 msgid "QRZ.com did not delete log IDs %1$s: %2$s"
-msgstr ""
-
-#: includes/class-wplb-qsos.php:49
-msgid "Not uploaded"
 msgstr ""
 
 #: includes/class-wplb-qsos.php:50
@@ -1462,23 +1831,23 @@ msgstr ""
 msgid "Not for QRZ.com"
 msgstr ""
 
-#: includes/class-wplb-qsos.php:138
-#: includes/class-wplb-qsos.php:175
+#: includes/class-wplb-qsos.php:141
+#: includes/class-wplb-qsos.php:178
 msgid "The QSO could not be saved."
 msgstr ""
 
-#: includes/class-wplb-shortcodes.php:64
+#: includes/class-wplb-shortcodes.php:70
 msgid "Unique callsigns"
 msgstr ""
 
-#: includes/class-wplb-shortcodes.php:69
+#: includes/class-wplb-shortcodes.php:75
 msgid "Countries"
 msgstr ""
 
-#: includes/class-wplb-shortcodes.php:71
+#: includes/class-wplb-shortcodes.php:77
 msgid "Grid squares"
 msgstr ""
 
-#: includes/class-wplb-shortcodes.php:79
+#: includes/class-wplb-shortcodes.php:85
 msgid "Latest QSO"
 msgstr ""

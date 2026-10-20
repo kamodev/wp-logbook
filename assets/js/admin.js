@@ -2,8 +2,9 @@
  * WP Logbook admin screens.
  *
  * QSO form: live UTC clock, band from frequency, default RST per mode and
- * the "previous contacts" panel. Logbook list: batched QRZ.com uploads.
- * Settings: QRZ.com connection test.
+ * the "previous contacts" panel and the logbook picker. Logbook list:
+ * batched QRZ.com uploads. Import: title of a new logbook. Settings and
+ * Logbooks: QRZ.com connection test.
  */
 ( function () {
 	'use strict';
@@ -103,6 +104,7 @@
 
 	initQsoForm();
 	initList();
+	initImport();
 	initSettings();
 
 	function initQsoForm() {
@@ -124,6 +126,25 @@
 		var rstSent = field( 'wplb-rst-sent' );
 		var rstRcvd = field( 'wplb-rst-rcvd' );
 		var callsign = field( 'wplb-callsign' );
+		var logbook = field( 'wplb-logbook' );
+		var station = field( 'wplb-station-callsign' );
+
+		// A new QSO takes the station callsign of the logbook it goes into,
+		// unless the callsign was changed by hand.
+		if ( logbook && station && isNew ) {
+			var stationOf = function () {
+				var option = logbook.options[ logbook.selectedIndex ];
+				return option ? option.getAttribute( 'data-station' ) || '' : '';
+			};
+			var previous = stationOf();
+			logbook.addEventListener( 'change', function () {
+				var next = stationOf();
+				if ( station.value.trim().toUpperCase() === previous.toUpperCase() || station.value.trim() === '' ) {
+					station.value = next;
+				}
+				previous = next;
+			} );
+		}
 
 		function setNow( dateInput ) {
 			var timeInput = field( dateInput.id + '-time' );
@@ -388,6 +409,27 @@
 		}
 	}
 
+	function initImport() {
+		var select = document.getElementById( 'wplb-import-logbook' );
+		var row = document.querySelector( '.wplb-new-logbook' );
+		if ( ! select || ! row ) {
+			return;
+		}
+		var title = row.querySelector( 'input' );
+		function toggle() {
+			var isNewLogbook = select.value === 'new';
+			row.hidden = ! isNewLogbook;
+			title.required = isNewLogbook;
+		}
+		select.addEventListener( 'change', function () {
+			toggle();
+			if ( select.value === 'new' ) {
+				title.focus();
+			}
+		} );
+		toggle();
+	}
+
 	function initSettings() {
 		var button = document.getElementById( 'wplb-qrz-test' );
 		if ( ! button ) {
@@ -395,12 +437,18 @@
 		}
 		var output = document.getElementById( 'wplb-qrz-test-result' );
 		var keyInput = document.getElementById( 'wplb-qrz-key' );
+		var stationInput = document.getElementById( 'wplb-logbook-station' );
 
 		button.addEventListener( 'click', function () {
 			output.className = 'wplb-test-result';
 			output.textContent = i18n.testing;
 			button.disabled = true;
-			post( 'wplb_qrz_test', { nonce: config.nonces.test, key: keyInput ? keyInput.value.trim() : '' } ).then( function ( data ) {
+			post( 'wplb_qrz_test', {
+				nonce: config.nonces.test,
+				key: keyInput ? keyInput.value.trim() : '',
+				logbook: button.getAttribute( 'data-logbook' ) || '0',
+				station: stationInput ? stationInput.value.trim() : '',
+			} ).then( function ( data ) {
 				output.className = 'wplb-test-result is-ok';
 				output.textContent = '';
 				output.appendChild( element( 'strong', '', data.message ) );
