@@ -1,6 +1,6 @@
 # WP Logbook
 
-An amateur radio logbook for WordPress. Log your contacts (QSOs) from the WordPress dashboard, import and export ADIF, show your log with an "Am I in your log?" lookup on your site, and optionally upload contacts to your [QRZ.com Logbook](https://logbook.qrz.com/) through the QRZ.com Logbook API.
+An amateur radio logbook for WordPress. Log your contacts (QSOs) from the WordPress dashboard, import and export ADIF, show your log on your site as a filterable table or as tiles, and optionally upload contacts to your [QRZ.com Logbook](https://logbook.qrz.com/) through the QRZ.com Logbook API.
 
 The QRZ.com upload is optional. The logbook works the same with it switched off.
 
@@ -11,7 +11,7 @@ The QRZ.com upload is optional. The logbook works the same with it switched off.
 - **ADIF field layout**: 73 fields that follow the ADIF 3.1.8 specification (see [field layout](#logbook-field-layout)), covering contest exchanges, POTA/SOTA/WWFF, satellites, and paper/LoTW/eQSL QSL status.
 - **ADIF import** with duplicate detection. Handles files from other logging programs: submodes written as modes (`MODE=USB`, `MODE=FT4`), frequencies in kHz, UTF-8 or Latin-1 text, and lengths counted in bytes or characters.
 - **Export** to ADIF (`.adi`) or CSV, either everything or only selected QSOs.
-- **Public display** with `[wp_logbook]` and `[wp_logbook_stats]`.
+- **Public display**: `[wp_logbook]` (table) and `[wp_logbook_tiles]` (tiles) with optional pagination and visitor filters for date, callsign, band, mode, grid, state, county, POTA, SOTA and more. Each filter can be switched on or off per shortcode. `[wp_logbook_stats]` shows totals.
 - **Optional QRZ.com Logbook upload**: on save, in the background, or in bulk. Edits replace the QRZ.com copy and deletions can be passed on.
 - Translation-ready (`languages/wp-logbook.pot`).
 
@@ -87,22 +87,69 @@ Requests carry a descriptive `User-Agent` (`WP-Logbook/<version> (WordPress/<ver
 
 ## Shortcodes
 
-### `[wp_logbook]`
+### `[wp_logbook]` and `[wp_logbook_tiles]`
 
-Shows a table of QSOs, newest first, with paging. If enabled, it also shows a callsign lookup where visitors can check whether they are in your log. Portable forms such as `K1ABC/P` match too.
+Both show your QSOs newest first, with a filter form for visitors and page links. `[wp_logbook]` shows a table and `[wp_logbook_tiles]` shows tiles (cards). Both take the same attributes, and `layout="tiles"` also switches `[wp_logbook]` to tiles.
+
+```
+[wp_logbook filters="date,callsign,grid,county,state,pota,sota" page_size="50"]
+[wp_logbook_tiles page_size="12" columns="time_on,callsign,band,mode,name,qth,state,pota_ref,confirmed"]
+[wp_logbook_tiles my_pota="US-1234" filters="date,callsign,band,mode"]
+[wp_logbook pagination="no" page_size="10" filters="none"]
+```
+
+The third example shows all contacts from one park activation. The last shows the 10 latest contacts with no filters.
+
+#### Display and pagination
 
 | Attribute | Default | Description |
 |---|---|---|
-| `columns` | From settings | Comma-separated column keys, e.g. `time_on,callsign,band,mode,country`. Only public fields are allowed: `time_on`, `callsign`, `band`, `freq`, `mode`, `rst_sent`, `rst_rcvd`, `name`, `qth`, `gridsquare`, `country`, `comment`, `state`, `cnty`, `dxcc`, `cont`, `cqz`, `ituz`, `iota`, `sota_ref`, `pota_ref`, `wwff_ref`, `contest_id`, `station_callsign`, `tx_pwr`, `my_gridsquare`, `my_sota_ref`, `my_pota_ref`, `prop_mode`, `sat_name`, `confirmed`. |
-| `limit` | From settings (25) | QSOs per page (1–500). |
-| `search` | From settings (`yes`) | Show the callsign lookup (`yes` / `no`). |
-| `band` | – | Only this band, e.g. `20m`. |
-| `mode` | – | Only this mode or submode, e.g. `FT8`, `SSB` (includes USB and LSB) or `FT4`. |
-| `station` | – | Only QSOs made as this station callsign. |
-| `callsign` | – | Only QSOs with this station. |
-| `pagination` | `yes` | Show paging links. |
+| `layout` | `table` (`tiles` for `[wp_logbook_tiles]`) | `table` or `tiles`. |
+| `columns` | From settings | Comma-separated column keys, e.g. `time_on,callsign,band,mode,country`. Only public fields are allowed: `time_on`, `callsign`, `band`, `freq`, `mode`, `rst_sent`, `rst_rcvd`, `name`, `qth`, `gridsquare`, `country`, `comment`, `state`, `cnty`, `dxcc`, `cont`, `cqz`, `ituz`, `iota`, `sota_ref`, `pota_ref`, `wwff_ref`, `contest_id`, `station_callsign`, `tx_pwr`, `my_gridsquare`, `my_sota_ref`, `my_pota_ref`, `prop_mode`, `sat_name`, `confirmed`. A tile always starts with the callsign; it shows the date and band/mode/frequency at the top when those columns are listed, and the other columns that have a value below them. |
+| `pagination` | `yes` | `yes` shows page links. With `no`, only the latest `page_size` QSOs are shown. |
+| `page_size` | From settings (25) | QSOs per page, 1–500. `limit` is the older name for it. |
+| `page_sizes` | – | Lets visitors choose the page size, e.g. `10,25,50,100`. |
+| `id` | – | Name for this logbook when a page has more than one, so their filters and pages stay independent. |
 
-Example: `[wp_logbook columns="time_on,callsign,band,mode,pota_ref" mode="SSB" limit="50"]`
+#### Filters
+
+Visitors filter with the form above the results. Menus list only values that occur in your log, and a menu is left out when it would offer just one value.
+
+| Filter | Matches | Control | On by default |
+|---|---|---|:-:|
+| `date` | Contacts between two dates (UTC); either end can be left empty | From / To dates | ✓ |
+| `callsign` | Callsigns starting with the text, also after a prefix (`W1AW` finds `W1AW`, `W1AW/P` and `VE3/W1AW`) | Text | ✓ |
+| `band` | Band | Menu | ✓ |
+| `mode` | Mode or submode | Menu | ✓ |
+| `grid` | Grid squares starting with the text (`FN` or `FN31`) | Text | ✓ |
+| `state` | State / province | Menu | ✓ |
+| `county` | County containing the text | Text | ✓ |
+| `pota` | POTA park of the station you worked containing the text (`US-1234`) | Text | ✓ |
+| `sota` | SOTA summit of the station you worked containing the text (`W7W/LC-001`) | Text | ✓ |
+| `country` | Country | Menu | |
+| `continent` | Continent | Menu | |
+| `wwff` | WWFF reference containing the text | Text | |
+| `iota` | IOTA reference starting with the text | Text | |
+| `my_pota` | Your own park (activations) containing the text; suggests your parks | Text | |
+| `my_sota` | Your own summit containing the text; suggests your summits | Text | |
+| `contest` | Contest ID | Menu | |
+| `satellite` | Satellite name | Menu | |
+| `station` | Station callsign you operated as | Menu | |
+| `confirmed` | Confirmed by QSL card, LoTW or eQSL, or not | Menu | |
+
+The callsign filter is on by default only while **Callsign search** is ticked in the settings.
+
+Choosing filters:
+
+| Attribute | Example | Description |
+|---|---|---|
+| `filters` | `filters="date,callsign,state"` | Exactly these filters, in this order. `all` shows every filter, `none` hides the form. Leave it out for the default set. `gridsquare`, `cnty` and `cont` are accepted as names too. |
+| `filter_<name>` | `filter_date="no" filter_my_pota="yes"` | Switch one filter on or off, on top of `filters`. `search` is the older name of `filter_callsign`. |
+| `collapse_filters` | `collapse_filters="yes"` | Start with the filter form folded away, unless a filter is in use. Useful on phones when many filters are on. |
+
+Fixed filters limit the logbook for every visitor, and the visitor control for that filter is not shown: `band`, `mode`, `station`, `callsign` (this exact station, including portable forms), `date_from`, `date_to` (YYYY-MM-DD), `grid`, `state`, `county`, `country`, `continent`, `pota`, `sota`, `wwff`, `iota`, `my_pota`, `my_sota`, `contest`, `satellite` and `confirmed` (`yes` / `no`). For example, `[wp_logbook station="N0CALL" mode="FT8"]` shows only FT8 contacts made as N0CALL.
+
+Filtered views are plain links, so they can be bookmarked and shared: `https://example.com/log/?wplb_state=CT&wplb_band=20m`. The parameters are `wplb_<filter>`, plus `wplb_from` / `wplb_to` for dates, `wplb_pg` for the page and `wplb_size` for the page size. With `id="club"` they become `wplb_club_<filter>`.
 
 ### `[wp_logbook_stats]`
 
@@ -121,7 +168,7 @@ Shows totals (QSOs, unique callsigns, DXCC entities or countries, grid squares, 
 
 ## Logbook field layout
 
-QSOs are stored in their own table (`{prefix}wplb_qsos`). Each column corresponds to an ADIF field, using the field definitions, band plan and mode/submode lists of [ADIF 3.1.8](https://www.adif.org/). Dates and times are UTC. **Public** marks fields that can be shown with `[wp_logbook]`. **QRZ.com** marks fields sent when uploading.
+QSOs are stored in their own table (`{prefix}wplb_qsos`). Each column corresponds to an ADIF field, using the field definitions, band plan and mode/submode lists of [ADIF 3.1.8](https://www.adif.org/). Dates and times are UTC. **Public** marks fields that can be shown with `[wp_logbook]` and `[wp_logbook_tiles]`. **QRZ.com** marks fields sent when uploading.
 
 **Contact**
 

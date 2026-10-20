@@ -222,6 +222,79 @@ try {
 	wplb_check( 'uploaded' === WPLB_QSOs::get( $bad )['qrz_status'], 'background upload' );
 	wplb_settings( array( 'qrz_background_sync' => 0 ) );
 	wplb_check( ! wp_next_scheduled( WPLB_QRZ_Sync::CRON_HOOK ), 'background upload unscheduled' );
+
+	/* Public logbook shortcodes */
+	wplb_reset();
+	wplb_settings( array( 'public_per_page' => 25, 'public_search' => 1, 'public_columns' => array( 'time_on', 'callsign', 'band', 'mode', 'country', 'gridsquare' ) ) );
+	$seed = array(
+		array( 'callsign' => 'W1AW', 'time_on' => '2026-10-01 12:00:00', 'band' => '20m', 'mode' => 'SSB', 'submode' => 'USB', 'state' => 'CT', 'cnty' => 'CT,Hartford', 'gridsquare' => 'FN31pr', 'pota_ref' => 'US-1234', 'qsl_rcvd' => 'Y', 'station_callsign' => 'N0CALL' ),
+		array( 'callsign' => 'K1ABC/P', 'time_on' => '2026-10-02 12:00:00', 'band' => '40m', 'mode' => 'CW', 'state' => 'MA', 'cnty' => 'MA,Middlesex', 'gridsquare' => 'FN42', 'sota_ref' => 'W1/HA-001', 'station_callsign' => 'N0CALL' ),
+		array( 'callsign' => 'VE3XYZ', 'time_on' => '2026-10-04 12:00:00', 'band' => '20m', 'mode' => 'SSB', 'submode' => 'USB', 'state' => 'ON', 'gridsquare' => 'FN03', 'pota_ref' => 'CA-0001,CA-0002', 'station_callsign' => 'W0CLUB' ),
+	);
+	for ( $i = 1; $i <= 12; $i++ ) {
+		$seed[] = array( 'callsign' => 'K0A' . chr( 64 + $i ), 'time_on' => sprintf( '2026-09-%02d 10:00:00', $i ), 'band' => '20m', 'mode' => 'FT8', 'gridsquare' => 'EM48', 'state' => 'MO', 'my_pota_ref' => $i <= 6 ? 'US-5678' : 'US-9999', 'station_callsign' => 'N0CALL' );
+	}
+	foreach ( $seed as $qso ) {
+		WPLB_QSOs::insert( $qso );
+	}
+	$render = function ( $shortcode, array $get = array() ) {
+		$_GET                   = $get;
+		$_SERVER['REQUEST_URI'] = '/log/' . ( $get ? '?' . http_build_query( $get ) : '' );
+		$html                   = do_shortcode( $shortcode );
+		$_GET                   = array();
+		return $html;
+	};
+	$rows = function ( $html ) {
+		return preg_match( '/<tbody>(.*)<\/tbody>/s', $html, $m ) ? substr_count( $m[1], '<tr>' ) : substr_count( $html, '<li class="wplb-tile">' );
+	};
+
+	$html = $render( '[wp_logbook]' );
+	foreach ( array( 'from', 'to', 'callsign', 'band', 'mode', 'grid', 'state', 'county', 'pota', 'sota' ) as $param ) {
+		wplb_check( false !== strpos( $html, 'name="wplb_' . $param . '"' ), "default filter {$param}" );
+	}
+	wplb_check( 15 === $rows( $html ) && false === strpos( $html, 'name="wplb_my_pota"' ), 'default table' );
+	wplb_check( false === strpos( $render( '[wp_logbook filters="none"]' ), 'wplb-filters' ), 'filters="none"' );
+	$html = $render( '[wp_logbook filter_date="no" filter_my_pota="yes"]' );
+	wplb_check( false === strpos( $html, 'wplb_from' ) && false !== strpos( $html, 'name="wplb_my_pota"' ), 'per-filter switches' );
+	preg_match_all( '/name="(wplb_[a-z_]+)"/', $render( '[wp_logbook filters="state,gridsquare,bogus" filter_pota="yes"]' ), $names );
+	wplb_check( array( 'wplb_state', 'wplb_grid', 'wplb_pota' ) === $names[1], 'filter list, alias and unknown names' );
+
+	$cases = array(
+		'state'     => array( array( 'wplb_state' => 'CT' ), 1 ),
+		'county'    => array( array( 'wplb_county' => 'middlesex' ), 1 ),
+		'grid'      => array( array( 'wplb_grid' => 'fn' ), 3 ),
+		'pota'      => array( array( 'wplb_pota' => 'ca-0002' ), 1 ),
+		'sota'      => array( array( 'wplb_sota' => 'W1/HA' ), 1 ),
+		'callsign'  => array( array( 'wplb_callsign' => 'k0a' ), 12 ),
+		'date'      => array( array( 'wplb_from' => '2026-10-01', 'wplb_to' => '2026-10-02' ), 2 ),
+		'band+mode' => array( array( 'wplb_band' => '20m', 'wplb_mode' => 'SSB|USB' ), 2 ),
+		'my_pota'   => array( array( 'wplb_my_pota' => 'US-5678' ), 6 ),
+		'station'   => array( array( 'wplb_station' => 'W0CLUB' ), 1 ),
+		'confirmed' => array( array( 'wplb_confirmed' => 'yes' ), 1 ),
+	);
+	foreach ( $cases as $label => $case ) {
+		wplb_check( $case[1] === $rows( $render( '[wp_logbook filters="all"]', $case[0] ) ), "visitor filter {$label}" );
+	}
+	wplb_check( false !== strpos( $render( '[wp_logbook filters="all"]', array( 'wplb_state' => 'ZZ' ) ), 'No contacts match these filters.' ), 'no matches' );
+
+	$html = $render( '[wp_logbook state="ma"]' );
+	wplb_check( 1 === $rows( $html ) && false === strpos( $html, 'name="wplb_state"' ), 'fixed filter hides its control' );
+	wplb_check( 6 === $rows( $render( '[wp_logbook my_pota="US-5678"]' ) ) && 1 === $rows( $render( '[wp_logbook station="w0club"]' ) ), 'fixed filters' );
+
+	$html = $render( '[wp_logbook page_size="5"]', array( 'wplb_pg' => '2', 'wplb_state' => 'MO' ) );
+	wplb_check( 5 === $rows( $html ) && false !== strpos( $html, 'Showing 6–10 of 12' ) && false !== strpos( $html, 'wplb_state=MO' ), 'page 2 keeps the filter' );
+	wplb_check( 2 === $rows( $render( '[wp_logbook page_size="5"]', array( 'wplb_pg' => '99', 'wplb_state' => 'MO' ) ) ), 'page past the end shows the last page' );
+	$html = $render( '[wp_logbook pagination="no" page_size="3"]', array( 'wplb_pg' => '3' ) );
+	wplb_check( 3 === $rows( $html ) && false === strpos( $html, 'wplb-pagination' ) && false !== strpos( $html, 'VE3XYZ' ), 'pagination off shows the latest page_size QSOs' );
+	wplb_check( 10 === $rows( $render( '[wp_logbook page_size="5" page_sizes="10,50"]', array( 'wplb_size' => '10' ) ) ), 'visitor page size' );
+	wplb_check( 5 === $rows( $render( '[wp_logbook page_size="5" page_sizes="10,50"]', array( 'wplb_size' => '7' ) ) ), 'unlisted page size ignored' );
+
+	$html = $render( '[wp_logbook_tiles page_size="4" columns="time_on,callsign,band,mode,state,pota_ref,confirmed"]', array( 'wplb_pota' => 'US-1234' ) );
+	wplb_check( 1 === $rows( $html ) && false !== strpos( $html, 'wplb-tile-call">W1AW<' ) && false !== strpos( $html, '✓ Confirmed' ), 'tiles with a filter' );
+	wplb_check( 4 === $rows( $render( '[wp_logbook layout="tiles" page_size="4"]' ) ), 'layout="tiles"' );
+	wplb_check( 1 === $rows( $render( '[wp_logbook id="club" filters="state"]', array( 'wplb_club_state' => 'CT', 'wplb_state' => 'MA' ) ) ), 'id keeps logbooks independent' );
+	$html = $render( '[wp_logbook]', array( 'wplb_county' => '"><script>alert(1)</script>' ) );
+	wplb_check( false === strpos( $html, '<script>alert' ), 'visitor input escaped' );
 } finally {
 	wplb_reset();
 	foreach ( array( WPLB_Settings::OPTION => 'settings', WPLB_Settings::API_KEY_OPTION => 'key' ) as $wplb_option => $wplb_saved ) {

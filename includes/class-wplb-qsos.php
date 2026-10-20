@@ -230,6 +230,11 @@ class WPLB_QSOs {
 	 *     @type string       $station_callsign Station callsign used for the QSO.
 	 *     @type string       $date_from        Y-m-d, inclusive.
 	 *     @type string       $date_to          Y-m-d, inclusive.
+	 *     @type string       $callsign_starts  Callsigns starting with this text, also after a prefix (VE3/K1ABC).
+	 *     @type array        $equals           Column => value, exact match.
+	 *     @type array        $prefix           Column => value, starts with.
+	 *     @type array        $contains         Column => value, contains.
+	 *     @type string       $confirmed        "yes" or "no": confirmed by QSL card, LoTW or eQSL.
 	 *     @type int[]        $ids              Limit to these IDs.
 	 *     @type int          $exclude          Leave out this ID.
 	 *     @type string       $orderby          One of SORTABLE.
@@ -342,6 +347,37 @@ class WPLB_QSOs {
 		if ( ! empty( $args['date_to'] ) && WPLB_Fields::normalize_date( $args['date_to'] ) ) {
 			$where[]  = 'time_on <= %s';
 			$params[] = WPLB_Fields::normalize_date( $args['date_to'] ) . ' 23:59:59';
+		}
+
+		if ( ! empty( $args['callsign_starts'] ) ) {
+			$escaped = $wpdb->esc_like( strtoupper( $args['callsign_starts'] ) );
+			$where[] = '(callsign LIKE %s OR callsign LIKE %s)';
+			array_push( $params, $escaped . '%', '%/' . $escaped . '%' );
+		}
+
+		// Column filters: array( column => value ) for exact, starts-with and contains matches.
+		$columns = self::columns();
+		foreach ( array( 'equals', 'prefix', 'contains' ) as $match ) {
+			if ( empty( $args[ $match ] ) || ! is_array( $args[ $match ] ) ) {
+				continue;
+			}
+			foreach ( $args[ $match ] as $column => $value ) {
+				if ( ! in_array( $column, $columns, true ) || '' === (string) $value ) {
+					continue;
+				}
+				if ( 'equals' === $match ) {
+					$where[]  = "{$column} = %s";
+					$params[] = (string) $value;
+				} else {
+					$where[]  = "{$column} LIKE %s";
+					$params[] = ( 'contains' === $match ? '%' : '' ) . $wpdb->esc_like( (string) $value ) . '%';
+				}
+			}
+		}
+
+		if ( ! empty( $args['confirmed'] ) && in_array( $args['confirmed'], array( 'yes', 'no' ), true ) ) {
+			$confirmed = "(qsl_rcvd = 'Y' OR lotw_qsl_rcvd = 'Y' OR eqsl_qsl_rcvd = 'Y')";
+			$where[]   = 'yes' === $args['confirmed'] ? $confirmed : "NOT {$confirmed}";
 		}
 
 		if ( ! empty( $args['ids'] ) ) {
@@ -518,13 +554,17 @@ class WPLB_QSOs {
 	/**
 	 * Bands and mode pairs used in the log, for filter menus.
 	 *
+	 * @param array $args Optional query() filters limiting which QSOs count.
 	 * @return array { bands: string[], modes: array value => label }
 	 */
-	public static function filter_options() {
+	public static function filter_options( array $args = array() ) {
 		global $wpdb;
 
-		$table = self::table();
-		$bands = $wpdb->get_col( "SELECT DISTINCT band FROM {$table} WHERE band <> ''" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		list( $where, $params ) = self::where( $args );
+		$table                  = self::table();
+
+		$sql   = "SELECT DISTINCT band FROM {$table} WHERE {$where} AND band <> ''";
+		$bands = $wpdb->get_col( $params ? $wpdb->prepare( $sql, $params ) : $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 		$order = array_flip( array_keys( WPLB_Fields::bands() ) );
 		usort(
 			$bands,
@@ -534,7 +574,8 @@ class WPLB_QSOs {
 		);
 
 		$modes = array();
-		$rows  = $wpdb->get_results( "SELECT DISTINCT mode, submode FROM {$table} WHERE mode <> ''", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$sql   = "SELECT DISTINCT mode, submode FROM {$table} WHERE {$where} AND mode <> ''";
+		$rows  = $wpdb->get_results( $params ? $wpdb->prepare( $sql, $params ) : $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 		foreach ( (array) $rows as $row ) {
 			$modes[ WPLB_Fields::mode_value( $row['mode'], $row['submode'] ) ] = WPLB_Fields::display_mode( $row['mode'], $row['submode'] );
 		}
@@ -544,6 +585,29 @@ class WPLB_QSOs {
 			'bands' => $bands,
 			'modes' => $modes,
 		);
+	}
+
+	/**
+	 * Distinct non-empty values of a column, for filter menus.
+	 *
+	 * @param string $column Column name.
+	 * @param array  $args   Optional query() filters limiting which QSOs count.
+	 * @param int    $limit  Maximum number of values.
+	 * @return string[] Sorted values.
+	 */
+	public static function distinct_values( $column, array $args = array(), $limit = 500 ) {
+		global $wpdb;
+
+		if ( ! in_array( $column, self::columns(), true ) ) {
+			return array();
+		}
+
+		list( $where, $params ) = self::where( $args );
+		$table                  = self::table();
+		$sql                    = "SELECT DISTINCT {$column} FROM {$table} WHERE {$where} AND {$column} <> '' ORDER BY {$column} ASC LIMIT %d";
+		$params[]               = max( 1, (int) $limit );
+
+		return array_map( 'strval', $wpdb->get_col( $wpdb->prepare( $sql, $params ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 	}
 
 	/**

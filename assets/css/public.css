@@ -1,18 +1,80 @@
 /* WP Logbook – public shortcodes. Kept minimal so themes stay in charge. */
 
-.wplb-lookup {
+.wplb-logbook {
+	--wplb-border: rgba(128, 128, 128, 0.35);
+}
+
+/* Filter form */
+.wplb-filters {
+	border: 1px solid var(--wplb-border);
+	margin: 0 0 1em;
+	padding: 0.75em 1em 1em;
+}
+
+.wplb-filters-title {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.wplb-filters-panel[open] > .wplb-filters-title {
+	margin-bottom: 0.5em;
+}
+
+.wplb-filter-fields {
+	display: grid;
+	gap: 0.75em 1em;
+	grid-template-columns: repeat(auto-fill, minmax(10em, 1fr));
+}
+
+.wplb-filter label {
+	display: block;
+	font-size: 0.85em;
+	margin-bottom: 0.2em;
+}
+
+.wplb-filter input,
+.wplb-filter select {
+	box-sizing: border-box;
+	font: inherit;
+	font-size: 0.9em;
+	max-width: 100%;
+	padding: 0.3em 0.45em;
+	width: 100%;
+}
+
+.wplb-filter-actions button {
+	cursor: pointer;
+	font: inherit;
+	font-size: 0.9em;
+	padding: 0.35em 1em;
+}
+
+.wplb-filter-callsign input,
+.wplb-filter-grid input,
+.wplb-filter-pota input,
+.wplb-filter-sota input,
+.wplb-filter-wwff input,
+.wplb-filter-iota input,
+.wplb-filter-my_pota input,
+.wplb-filter-my_sota input {
+	text-transform: uppercase;
+}
+
+.wplb-filter-actions {
 	align-items: center;
 	display: flex;
 	flex-wrap: wrap;
-	gap: 0.5em;
-	margin-bottom: 1em;
+	gap: 1em;
+	margin-top: 0.9em;
 }
 
-.wplb-lookup input[type="text"] {
-	text-transform: uppercase;
-	width: 10em;
+.wplb-summary {
+	font-size: 0.9em;
+	margin: 0 0 0.5em;
+	opacity: 0.85;
 }
 
+/* Table */
 .wplb-table-wrap {
 	overflow-x: auto;
 }
@@ -36,13 +98,103 @@
 	white-space: nowrap;
 }
 
-.wplb-pagination {
-	display: flex;
+.wplb-table td.wplb-col-time_on {
+	white-space: nowrap;
+}
+
+/* Tiles */
+.wplb-tiles {
+	display: grid;
 	gap: 1em;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 13em), 1fr));
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.wplb-tile {
+	border: 1px solid var(--wplb-border);
+	border-radius: 6px;
+	margin: 0;
+	padding: 0.9em 1em;
+}
+
+.wplb-tile-head {
+	align-items: baseline;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25em 0.75em;
+	justify-content: space-between;
+}
+
+.wplb-tile-call {
+	font-size: 1.3em;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	overflow-wrap: anywhere;
+}
+
+.wplb-tile-confirmed {
+	font-size: 0.8em;
+	white-space: nowrap;
+}
+
+.wplb-tile-time {
+	font-size: 0.85em;
+	margin: 0.15em 0 0.6em;
+	opacity: 0.8;
+}
+
+.wplb-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em;
+	margin: 0 0 0.6em;
+}
+
+.wplb-chip {
+	border: 1px solid var(--wplb-border);
+	border-radius: 999px;
+	font-size: 0.8em;
+	padding: 0.05em 0.65em;
+}
+
+.wplb-tile-fields {
+	display: grid;
+	font-size: 0.9em;
+	gap: 0.15em 0.75em;
+	grid-template-columns: fit-content(50%) minmax(0, 1fr);
+	margin: 0;
+}
+
+.wplb-tile-fields div {
+	display: contents;
+}
+
+.wplb-tile-fields dt {
+	opacity: 0.75;
+}
+
+.wplb-tile-fields dd {
+	margin: 0;
+	overflow-wrap: break-word;
+}
+
+/* Page links */
+.wplb-pagination {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4em 0.75em;
 	justify-content: center;
 	margin: 1em 0;
 }
 
+.wplb-page-current {
+	font-weight: 700;
+}
+
+/* Statistics */
 .wplb-totals {
 	display: grid;
 	gap: 1em;

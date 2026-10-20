@@ -494,9 +494,10 @@ class WPLB_Admin {
 		echo '<h2>' . esc_html__( 'Public logbook', 'wp-logbook' ) . '</h2>';
 		echo '<p>' . wp_kses_post(
 			sprintf(
-				/* translators: 1: logbook shortcode, 2: statistics shortcode */
-				__( 'Show your log on any page or post with %1$s, and totals per band and mode with %2$s.', 'wp-logbook' ),
+				/* translators: 1: table shortcode, 2: tiles shortcode, 3: statistics shortcode */
+				__( 'Show your log on any page or post as a table with %1$s or as tiles with %2$s, and totals per band and mode with %3$s. These settings are the defaults; shortcode attributes choose the filters, columns and page size per page (see the plugin README).', 'wp-logbook' ),
 				'<code>[wp_logbook]</code>',
+				'<code>[wp_logbook_tiles]</code>',
 				'<code>[wp_logbook_stats]</code>'
 			)
 		) . '</p>';
@@ -518,7 +519,7 @@ class WPLB_Admin {
 			esc_attr( $option ),
 			(int) $settings['public_per_page']
 		);
-		self::checkbox_row( __( 'Callsign lookup', 'wp-logbook' ), 'public_search', __( 'Let visitors search the log for their callsign ("Am I in your log?")', 'wp-logbook' ), $settings );
+		self::checkbox_row( __( 'Callsign search', 'wp-logbook' ), 'public_search', __( 'Include the callsign filter by default, so visitors can check whether they are in the log', 'wp-logbook' ), $settings );
 		echo '</table>';
 
 		// QRZ.com.
