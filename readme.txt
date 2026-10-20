@@ -4,11 +4,11 @@ Tags: ham radio, amateur radio, logbook, adif, qrz
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Amateur radio QSO logbook with ADIF import/export, a public log with callsign lookup, and optional upload to the QRZ.com Logbook.
+Amateur radio QSO logbook with ADIF import/export, a filterable public log (table or tiles), and optional upload to the QRZ.com Logbook.
 
 == Description ==
 
@@ -17,7 +17,7 @@ WP Logbook lets amateur radio operators keep their contact (QSO) log in WordPres
 * Quick QSO entry: the start time follows a UTC clock, the band is filled in from the frequency, RST defaults to match the mode, and the form shows earlier contacts with the station.
 * 73 fields that follow the ADIF 3.1.8 specification: contest exchanges, POTA/SOTA/WWFF, satellites, and paper/LoTW/eQSL QSL status.
 * Import ADIF files from other logging programs, with duplicate detection. Export to ADIF or CSV.
-* Show your log on any page with `[wp_logbook]`, including an "Am I in your log?" callsign lookup, and statistics with `[wp_logbook_stats]`.
+* Show your log on any page as a table with `[wp_logbook]` or as tiles with `[wp_logbook_tiles]`, with pagination and visitor filters for date, callsign, band, mode, grid square, state, county, POTA, SOTA and more. Each filter can be switched on or off per shortcode. Statistics with `[wp_logbook_stats]`.
 * Optional: upload QSOs to your QRZ.com Logbook through the QRZ.com Logbook API, on save, in the background or in bulk. Edits replace the QRZ.com copy and deletions can be passed on.
 
 = QRZ.com =
@@ -51,6 +51,12 @@ All times are UTC, as in ADIF.
 It is kept, unless you tick "Delete all QSOs and settings when the plugin is deleted" in the settings.
 
 == Changelog ==
+
+= 1.1.0 =
+* New `[wp_logbook_tiles]` shortcode and `layout` attribute: show QSOs as tiles.
+* Visitor filters on the public logbook: date range, callsign, band, mode, grid square, state, county, POTA, SOTA, country, continent, WWFF, IOTA, my POTA/SOTA, contest, satellite, station callsign and QSL confirmation. Each can be switched on or off with `filters` and `filter_<name>` attributes, or fixed to a value.
+* Pagination options: `pagination`, `page_size`, and `page_sizes` for a visitor page-size menu. Numbered page links.
+* The callsign filter replaces the separate "Am I in your log?" form.
 
 = 1.0.0 =
 * First release.
